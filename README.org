@@ -1,2 +1,3 @@
-# dotemacs
+* dotemacs
+
 Emacs configuration file
