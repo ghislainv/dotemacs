@@ -1,0 +1,1 @@
+/home/ghislain/.config/emacs/init.el
