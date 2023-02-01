@@ -211,13 +211,13 @@ justify (as for `fill-paragraph')."
   :defer t
   :bind ("C-²" . treemacs-select-window)
   :config
-  (setq treemacs-width 20
-	treemacs-indentation '(4 px)
+  (setq treemacs-width 30
+	treemacs-indentation '(6 px)
 	treemacs-is-never-other-window t
 	treemacs-width-is-initially-locked nil
 	treemacs-space-between-root-nodes nil
 	treemacs-collapse-dirs 4
-	treemacs-sorting 'alphabetic-desc
+	treemacs-sorting 'alphabetic-case-insensitive-asc
 	treemacs-text-scale -1)
   ;;(treemacs-indent-guide-mode)
   (treemacs-resize-icons 14)
