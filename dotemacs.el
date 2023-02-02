@@ -179,11 +179,31 @@ justify (as for `fill-paragraph')."
 (use-package all-the-icons
   :ensure t)
 
-;; Ajout des icônes pour dired
-(use-package all-the-icons-dired
+;; -------------------------------------
+;; Dired
+;; -------------------------------------
+
+(use-package dired
+  :ensure nil
+  :config
+  (use-package treemacs-icons-dired
+    :ensure t
+    :if (display-graphic-p)
+    :hook (dired-mode . treemacs-icons-dired-mode))
+  ;; Split window, Dired tries to guess a default target directory
+  (setq dired-dwim-target t
+	delete-by-moving-to-trash t))
+
+;; -------------------------------------
+;; IBUFFER
+;; -------------------------------------
+
+;; Using the ibuffer mode
+(global-set-key (kbd "C-x C-b") 'ibuffer)
+
+(use-package all-the-icons-ibuffer
   :ensure t
-  :hook
-  (dired-mode . all-the-icons-dired-mode))
+  :hook (ibuffer-mode . all-the-icons-ibuffer-mode))
 
 ;; -------------------------------------
 ;; MAGIT
@@ -192,13 +212,6 @@ justify (as for `fill-paragraph')."
 ;; Magit
 (use-package magit
   :bind ("C-x g" . magit-status))
-
-;; -------------------------------------
-;; IBUFFER
-;; -------------------------------------
-
-;; Using the ibuffer mode
-(global-set-key (kbd "C-x C-b") 'ibuffer)
 
 ;; -------------------------------------
 ;; TREE CONFIGURATION
@@ -835,10 +848,18 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 ;; HELM
 ;; --------------------------------------
 
+;; icons (treemacs icons by default)
+;; https://github.com/yyoncho/helm-icons
+(use-package helm-icons
+  :ensure t)
+  
 ;; helm completion system
 (use-package helm
+  :ensure t
+  :after helm-icons
   :init
   (helm-mode 1)
+  (helm-icons-enable)
   :bind
   (("M-x"     . helm-M-x)
    ("C-x C-f" . helm-find-files)
@@ -852,3 +873,16 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 
 ;;; ----------------
 ;;; .emacs ends here
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   '(helm-icons all-the-icons-ibuffer all-the-icons-install-fonts treemacs-icons-dired treemacs-all-the-icons dired yaml-mode xterm-color which-key use-package treemacs-magit rainbow-delimiters pylint py-autopep8 pretty-mode poly-R pdf-tools ox-twbs ox-rst ox-hugo org-roam org-ref org-contrib olivetti material-theme leuven-theme jedi helm-bibtex flycheck-grammalecte exec-path-from-shell ess elpy elfeed better-defaults auctex all-the-icons-dired)))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
