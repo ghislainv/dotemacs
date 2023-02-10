@@ -9,9 +9,9 @@
 ;; --------------------------------------
 
 ;; Define the custom file
-;; (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
-;; (when (file-exists-p custom-file)
-;;   (load custom-file))
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(when (file-exists-p custom-file)
+  (load custom-file))
 
 ;; --------------------------------------
 ;; INSTALL PACKAGES
@@ -23,7 +23,6 @@
 			better-defaults
 			bibtex-completion
 			citeproc
-			elfeed
 			elpy
 			exec-path-from-shell
 			flycheck
@@ -39,7 +38,6 @@
 			ox-hugo
 			ox-rst
 			ox-twbs
-			pdf-tools
 			pretty-mode
 			py-autopep8
 			pylint
@@ -93,8 +91,8 @@
 (desktop-save-mode 1) ;; save desktop
 ;; On affiche les colonnes dans la modeline
 (column-number-mode)
-;; On met en évidence la ligne en cours
-(global-hl-line-mode 1)
+;; Highlighting the current line for all programming major modes
+(add-hook 'prog-mode-hook #'hl-line-mode)
 ;; On ne demande pas confirmation pour tuer les sous-processus en sortant d'Emacs
 (setq confirm-kill-processes nil)
 (setq undo-limit 80000000                     ; Raise undo-limit to 80Mb
@@ -171,6 +169,12 @@ justify (as for `fill-paragraph')."
 (use-package rainbow-delimiters
   :ensure t)
 
+;; Auto-revert
+;; Keeping buffers automatically up-to-date
+;; https://www.gnu.org/software/emacs/manual/html_node/emacs/Auto-Revert.html
+(global-auto-revert-mode 1)
+(setq auto-revert-verbose nil)
+
 ;; -------------------------------------
 ;; Icons
 ;; -------------------------------------
@@ -185,6 +189,7 @@ justify (as for `fill-paragraph')."
 
 (use-package dired
   :ensure nil
+  :defines image-dired-external-viewer
   :config
   (use-package treemacs-icons-dired
     :ensure t
@@ -192,7 +197,12 @@ justify (as for `fill-paragraph')."
     :hook (dired-mode . treemacs-icons-dired-mode))
   ;; Split window, Dired tries to guess a default target directory
   (setq dired-dwim-target t
-	delete-by-moving-to-trash t))
+	delete-by-moving-to-trash t)
+  ;; Activate dired-x
+  (require 'dired-x)
+  ;; Define external image viewer/editor
+  (setq image-dired-external-viewer "/usr/bin/gimp")
+  )
 
 ;; -------------------------------------
 ;; IBUFFER
@@ -205,6 +215,41 @@ justify (as for `fill-paragraph')."
   :ensure t
   :hook (ibuffer-mode . all-the-icons-ibuffer-mode))
 
+;; -------------------------------------
+;; elfeed
+;; -------------------------------------
+
+(use-package elfeed
+  :ensure t
+  :bind ("C-x w" . elfeed)
+  :config
+  (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory))
+  )
+
+;; Configure Elfeed with org mode
+(use-package elfeed-org
+  :ensure t
+  :config
+  (elfeed-org)
+  (defvar elfeed-org-files
+    (list (expand-file-name "elfeed/elfeed.org" user-emacs-directory))
+    "List of elfeed.org files.")
+  (setq rmh-elfeed-org-files elfeed-org-files)
+  )
+
+;; -------------------------------------
+;; PDF-TOOLS
+;; -------------------------------------
+
+(use-package pdf-tools
+  :ensure t
+  :defer t
+  :config
+  (pdf-tools-install)
+  (setq-default pdf-view-display-size 'fit-page)
+   :custom
+   (pdf-annot-activate-created-annotations t "automatically annotate highlights"))
+       
 ;; -------------------------------------
 ;; MAGIT
 ;; -------------------------------------
@@ -268,33 +313,10 @@ justify (as for `fill-paragraph')."
   (insert "|>")
   (reindent-then-newline-and-indent))
 
-;; Configure ESS package
-(use-package ess
-  :ensure t
-  :defer t
-  :defines ess-r-mode-map inferior-ess-r-mode-map
-  :init
-  (require 'ess-site)
-  :mode ("\\.[rR]\\'" . R-mode)
-  :hook (ess-mode . rainbow-delimiters-mode)
-  :commands R
-  :bind (:map ess-r-mode-map
-              (";" . ess-insert-assign)
-              ;; RStudio equivalents
-              ("M--" . ess-insert-assign)
-              ("C-S-m" . japhir/insert-r-pipe)
-              :map inferior-ess-r-mode-map
-              (";" . ess-insert-assign)
-              ("M--" . ess-insert-assign)
-              ("C-S-m" . japhir/insert-r-pipe))
-  :config
-  ;; Style
-  (setq ess-style 'RStudio)
-  ;; Set locales
-  (unless (getenv "LANG") (setenv "LANG" "fr_FR.UTF-8"))
-  (unless (getenv "LC_ALL") (setenv "LC_ALL" "fr_FR.UTF-8"))
-  ;; Controlling buffer display
-  ;; (see section in http://ess.r-project.org/ess.pdf)
+;; Controlling buffer display
+;; (see section in http://ess.r-project.org/ess.pdf)
+(defun my/ess-display-buffer ()
+  "Displaying buffers with ESS."
   (setq display-buffer-alist
 	`(("^\\*R"
            (display-buffer-reuse-window display-buffer-in-side-window)
@@ -313,6 +335,34 @@ justify (as for `fill-paragraph')."
   ;; 	'(("*R"
   ;; 	   nil
   ;; 	   (dedicated . t))))
+  )
+
+;; Configure ESS package
+(use-package ess
+  :ensure t
+  :defer t
+  :defines ess-r-mode-map inferior-ess-r-mode-map
+  :init
+  (require 'ess-site)
+  :mode ("\\.[rR]\\'" . R-mode)
+  :hook
+  (ess-mode . (rainbow-delimiters-mode my/ess-display-buffer))
+  :commands R
+  :bind (:map ess-r-mode-map
+              (";" . ess-insert-assign)
+              ;; RStudio equivalents
+              ("M--" . ess-insert-assign)
+              ("C-S-m" . japhir/insert-r-pipe)
+              :map inferior-ess-r-mode-map
+              (";" . ess-insert-assign)
+              ("M--" . ess-insert-assign)
+              ("C-S-m" . japhir/insert-r-pipe))
+  :config
+  ;; Style
+  (setq ess-style 'RStudio)
+  ;; Set locales
+  (unless (getenv "LANG") (setenv "LANG" "fr_FR.UTF-8"))
+  (unless (getenv "LC_ALL") (setenv "LC_ALL" "fr_FR.UTF-8"))
   ;; Stop R repl eval from blocking emacs.
   (setq ess-eval-visibly 'nowait)
   ;; Syntax highlighting
@@ -376,17 +426,19 @@ justify (as for `fill-paragraph')."
   (unless (file-exists-p ispell-personal-dictionary)
     (write-region "" nil ispell-personal-dictionary nil 0)))
 
-;; Grammar checking
-;; Correction grammaticale
+;; Correction grammaticale (pour le français)
+;; https://github.com/milouse/flycheck-grammalecte
 (use-package flycheck-grammalecte
   :ensure t
   :after flycheck
+  :hook (fountain-mode . flycheck-mode)
   :init
-  ;; Par défaut, grammalecte est très exigeant, je le suis moins
   (setq flycheck-grammalecte-report-apos nil
-		flycheck-grammalecte-report-esp nil
-		flycheck-grammalecte-report-nbsp nil)
+        flycheck-grammalecte-report-esp nil
+        flycheck-grammalecte-report-nbsp nil)
   :config
+  (add-to-list 'flycheck-grammalecte-enabled-modes 'fountain-mode)
+  (grammalecte-download-grammalecte)
   (flycheck-grammalecte-setup))
 
 ;; -------------------------------------
@@ -611,7 +663,7 @@ justify (as for `fill-paragraph')."
 
 ;; enable autopep8 formatting on save
 (require 'py-autopep8)
-(add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
+(add-hook 'elpy-mode-hook 'py-autopep8-mode)
 
 ;; --------------------------------------
 ;; ORG MODE
@@ -873,16 +925,3 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 
 ;;; ----------------
 ;;; .emacs ends here
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(helm-icons all-the-icons-ibuffer all-the-icons-install-fonts treemacs-icons-dired treemacs-all-the-icons dired yaml-mode xterm-color which-key use-package treemacs-magit rainbow-delimiters pylint py-autopep8 pretty-mode poly-R pdf-tools ox-twbs ox-rst ox-hugo org-roam org-ref org-contrib olivetti material-theme leuven-theme jedi helm-bibtex flycheck-grammalecte exec-path-from-shell ess elpy elfeed better-defaults auctex all-the-icons-dired)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
