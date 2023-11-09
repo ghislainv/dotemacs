@@ -265,8 +265,12 @@ justify (as for `fill-paragraph')."
   :config
   (pdf-tools-install)
   (setq-default pdf-view-display-size 'fit-page)
-   :custom
-   (pdf-annot-activate-created-annotations t "automatically annotate highlights"))
+  (defun gv/turn-off-line-numbers ()
+	"Disable line numbering in the current buffer."
+	(display-line-numbers-mode -1))
+  :hook (pdf-view-mode . gv/turn-off-line-numbers)
+  :custom
+  (pdf-annot-activate-created-annotations t "automatically annotate highlights"))
        
 ;; -------------------------------------
 ;; MAGIT
