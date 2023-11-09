@@ -64,22 +64,4 @@
 ;; Sync Org with calendar
 (org-caldav-sync)
 
-;; Export Org to ICS calendar locally
-(setq org-agenda-files '("~/.config/emacs/org-caldav/events.org"))
-;; work
-(setq org-icalendar-exclude-tags '("birthday" "perso"))
-(org-icalendar-export-agenda-files)
-(copy-file "~/.config/emacs/org-caldav/events.ics"
-	   "~/Infomaniak/Notes/ics_calendars/work.ics" t)
-;; perso
-(setq org-icalendar-exclude-tags '("birthday" "work"))
-(org-icalendar-export-agenda-files)
-(copy-file "~/.config/emacs/org-caldav/events.ics"
-	   "~/Infomaniak/Notes/ics_calendars/perso.ics" t)
-;; birthday
-(setq org-icalendar-exclude-tags '("work" "perso"))
-(org-icalendar-export-agenda-files)
-(copy-file "~/.config/emacs/org-caldav/events.ics"
-	   "~/Infomaniak/Notes/ics_calendars/birthday.ics" t)
-
 ;;; org-caldav-config.el ends here
