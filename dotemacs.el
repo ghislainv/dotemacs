@@ -28,19 +28,15 @@
 (defvar my-package-list)
 (setq my-package-list '(auctex
 			better-defaults
-			bibtex-completion
 			citeproc
 			exec-path-from-shell
 			flycheck
-			helm-bibtex
 			htmlize
 			jedi
 			leuven-theme
 			olivetti
 			org
 			org-contrib
-			org-ref
-			org-roam
 			ox-hugo
 			ox-rst
 			ox-twbs
@@ -173,14 +169,6 @@ justify (as for `fill-paragraph')."
 (use-package company-box
   :ensure t
   :hook (company-mode . company-box-mode))
-
-;; Help with keyboard shortcuts
-(use-package which-key
-  :config
-  (which-key-mode t)
-  (setq which-key-sort-uppercase-first nil
-	max-mini-window-height 15)
-  (which-key-setup-side-window-bottom))
 
 ;; Rainbow delimiter
 (use-package rainbow-delimiters
@@ -494,58 +482,54 @@ justify (as for `fill-paragraph')."
 ;; -------------------------------------
 ;; LATEX/BIBTEX CONFIGURATION
 ;; -------------------------------------
+;; https://lucidmanager.org/productivity/emacs-bibtex-mode/
 
-;; Directories for bibliography
-(setq bib-files (directory-files
-                 (concat (getenv "HOME") "/Documents/Bibliography") t ".bib$")
-      bib-file-default (concat (getenv "HOME") "/Documents/Bibliography/biblio.bib")
-      bib-files-directory (concat (getenv "HOME") "/Documents/Bibliography/")
-      pdf-files-directory (concat (getenv "HOME") "/Documents/Bibliography/Articles")
-      bib-notes-directory (concat (getenv "HOME") "/Documents/Bibliography/Notes")
-      bib-notes-file (concat (getenv "HOME") "/Documents/Bibliography/Notes/notes_work.org"))
+;; Customizing bibtex
+(use-package bibtex
+  :custom
+  (bibtex-dialect 'biblatex)
+  (bibtex-user-optional-fields
+   '(("keywords" "Keywords to describe the entry" "")
+     ("file" "Link to a document file." "" )))
+  (bibtex-align-at-equal-sign t))
 
-(require 'tex-site)
-(setq reftex-bibpath-environment-variables
-      bib-files-directory) ; biblio
-(setq reftex-default-bibliography
-      bib-file-default)
-(setq TeX-PDF-mode t) ; PDFLatex by default
+;; Biblio package for adding BibTeX records and download publications
+(use-package biblio
+  :ensure t
+  :config
+  (setq biblio-crossref-user-email-address "ghislainv@mtloz.fr"))
 
-;; Max 90 characters
-(setq tex-mode-hook
-      (lambda ()
-	(auto-fill-mode t)
- 	(setq fill-column 90)
- 	))
+;; citar
+;; https://github.com/emacs-citar/citar#configuration
+(use-package citar
+  :ensure t
+  :no-require
+  :hook
+  (LaTeX-mode . citar-capf-setup)
+  (org-mode . citar-capf-setup)
+  :custom
+  (org-cite-global-bibliography '("~/Documents/Bibliography/biblio.bib"))
+  (org-cite-insert-processor 'citar)
+  (org-cite-follow-processor 'citar)
+  (org-cite-activate-processor 'citar)
+  (citar-bibliography org-cite-global-bibliography)
+  (citar-library-paths '("~/Documents/Bibliography/Articles/"))
+  (citar-library-file-extensions '("pdf" "jpg"))
+  (citar-file-additional-files-separator "-")
+  (citar-notes-paths '("~/Documents/Bibliography/Notes/"))
+  ;; optional: org-cite-insert is also bound to C-c C-x C-@
+  :bind
+  (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
 
-;; BibLaTeX settings
-;; bibtex-mode
-(setq bibtex-dialect 'biblatex)
-
-;; Spell checking (requires the ispell software)
-(add-hook 'bibtex-mode-hook 'flyspell-mode)
-
-;; helm-bibtex
-(use-package helm-bibtex
-    :ensure t
-    :config
-    (setq bibtex-completion-bibliography bib-files
-          bibtex-completion-library-path pdf-files-directory
-          bibtex-completion-pdf-field "File"
-          bibtex-completion-notes-path bib-notes-directory)
-    :bind
-    (("<menu>" . helm-command-prefix)
-     :map helm-command-map
-     ("b" . helm-bibtex)
-     ("<menu>" . helm-resume)))
-
-;; org-ref !! PROBLEM with org-bibtex <=> ol-bibtex
-(use-package org-ref
-    :config
-    (setq org-ref-completion-library 'org-ref-helm-cite
-          org-ref-get-pdf-filename-function 'org-ref-get-pdf-filename-helm-bibtex
-          org-ref-default-bibliography bib-file-default
-          org-ref-notes-directory bib-notes-directory))
+;; The citar-embark package adds contextual access actions in the
+;; minibuffer and at-point via the citar-embark-mode minor mode. When
+;; using Embark, the Citar actions are generic, and work the same
+;; across org, markdown, and latex modes.
+(use-package citar-embark
+  :ensure t
+  :after citar embark
+  :no-require
+  :config (citar-embark-mode))
 
 ;; -------------------------------------
 ;; PDF viewer
@@ -898,7 +882,7 @@ justify (as for `fill-paragraph')."
 (require 'ox-extra)
 (ox-extras-activate '(ignore-headlines))
 
-;; Processor for org-cite
+;; Processors for org-cite
 (require 'oc-csl)
 (require 'oc-natbib)
 
@@ -1074,59 +1058,63 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 		:foreground "#9EB6D4" :background "#E0EFFF")))
   "Face used to display state SDAY.")
 
-;; No bookmark with capture
-(setq org-capture-bookmark nil)
-
 ;; --------------------------------------
-;; ORG ROAM
+;; COMPLETION
 ;; --------------------------------------
 
-(use-package org-roam
+;; Enable rich annotations using the Marginalia package
+(use-package marginalia
   :ensure t
-  :after org
-  :init (setq org-roam-v2-ack t) ;; Acknowledge V2 upgrade
-  :custom
-  (org-roam-directory (concat (getenv "HOME") "/kDrive/Notes"))
-  :config
-  (org-roam-setup)
-  :bind (("C-c n f" . org-roam-node-find)
-         ("C-c n r" . org-roam-node-random)
-         (:map org-mode-map
-               (("C-c n i" . org-roam-node-insert)
-                ("C-c n o" . org-id-get-create)
-                ("C-c n t" . org-roam-tag-add)
-                ("C-c n a" . org-roam-alias-add)
-                ("C-c n l" . org-roam-buffer-toggle)))))
-
-;; --------------------------------------
-;; HELM
-;; --------------------------------------
-
-;; icons (treemacs icons by default)
-;; https://github.com/yyoncho/helm-icons
-(use-package helm-icons
-  :ensure t
-  :config
-  ;; set either to 'treemacs or 'all-the-icons
-  (setq helm-icons-provider 'treemacs))
-  
-;; helm completion system
-(use-package helm
-  :ensure t
-  :after helm-icons
   :init
-  (helm-mode 1)
-  (helm-icons-enable)
-  :bind
-  (("M-x"     . helm-M-x)
-   ("C-x C-f" . helm-find-files)
-   ("C-x b"   . helm-mini)
-   ("C-x C-r" . helm-recentf)
-   ("C-c i"   . helm-imenu)
-   ("M-y"     . helm-show-kill-ring)
-   :map helm-map
-   ("C-z" . helm-select-action)
-   ("<tab>" . helm-execute-persistent-action)))
+  (marginalia-mode))
+
+(use-package all-the-icons-completion
+  :ensure t
+  :after (marginalia all-the-icons)
+  :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
+  :init
+  (all-the-icons-completion-mode))
+
+;; Enable vertico
+(use-package vertico
+  :ensure t
+  :init
+  (vertico-mode)
+  ;; Show more candidates
+  (setq vertico-count 20)
+  ;; Grow and shrink the Vertico minibuffer
+  (setq vertico-resize t)
+  ;; Optionally enable cycling for `vertico-next' and `vertico-previous'.
+  (setq vertico-cycle t)
+  )
+
+;; Configure directory extension.
+(use-package vertico-directory
+  :after vertico
+  :ensure nil
+  ;; More convenient directory navigation commands
+  :bind (:map vertico-map
+              ("RET" . vertico-directory-enter)
+              ("DEL" . vertico-directory-delete-char)
+              ("M-DEL" . vertico-directory-delete-word))
+  ;; Tidy shadowed file names
+  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+
+;; Optionally use the `orderless' completion style.
+(use-package orderless
+  :ensure t
+  :init
+  (setq completion-styles '(orderless basic)
+        completion-category-defaults nil
+        completion-category-overrides '((file (styles partial-completion)))))
+
+;; Help with keyboard shortcuts
+(use-package which-key
+  :config
+  (which-key-mode t)
+  (setq which-key-sort-uppercase-first nil
+	max-mini-window-height 15)
+  (which-key-setup-side-window-bottom))
 
 ;;; ----------------
 ;;; dotemacs.el ends here
