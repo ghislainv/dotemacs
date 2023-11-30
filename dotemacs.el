@@ -731,6 +731,7 @@ justify (as for `fill-paragraph')."
 (setq org-refile-use-outline-path (quote file))       ; Show full paths for refiling
 
 ;; Standard key bindings
+(global-set-key (kbd "C-c i") 'org-id-get-create)
 (global-set-key (kbd "C-c l") 'org-store-link)
 (global-set-key (kbd "C-c b") 'org-iswitchb)
 (global-set-key (kbd "C-c c") 'org-capture)
