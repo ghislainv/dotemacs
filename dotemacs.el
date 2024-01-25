@@ -681,7 +681,11 @@ justify (as for `fill-paragraph')."
 			  ("C-<return>" . python-shell-send-region)
 			  ("C-<backspace>" . gv/python-shell-send-line))
   :config
-  (setq python-indent-offset 4))
+  (setq python-indent-guess-indent-offset t)
+  (setq python-indent-guess-indent-offset-verbose nil)
+  (setq python-shell-interpreter "ipython")
+  (setq python-shell-interpreter-args "-i --simple-prompt --profile=dev")
+  (setq python-shell-completion-native-enable nil))
   
 ;; --------------------------------------
 ;; PYTHON VIRTUAL ENVIRONMENT
@@ -1020,10 +1024,10 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 	 (file+headline gv/org-default-todos-file "Personal tasks")
 	 "*** TODO %?")
 	("m" "Meeting (work)" entry
-	 (file+headline gv/org-default-events-file "Work meetings")
+	 (file+headline gv/org-default-events-file "Work meetings, TZ Nouméa")
 	 "** %?\n%t")
 	("M" "Meeting (personal appointment)" entry
-	 (file+headline gv/org-default-events-file "Personal appointments")
+	 (file+headline gv/org-default-events-file "Personal appointments, TZ Nouméa")
 	 "** %?\n%t")
 	("e" "Event (non professional event)" entry
 	 (file+headline gv/org-default-events-file "Other events")
