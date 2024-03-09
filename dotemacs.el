@@ -79,7 +79,7 @@
 
 ;; Generalities
 (setq user-full-name "Ghislain Vieilledent")
-(setq user-mail-address "ghislain.vieilledent@cirad.fr")
+(setq user-mail-address "ghislainv@mtloz.fr")
 (setq inhibit-startup-message t) ;; hide the startup message
 (global-display-line-numbers-mode 1) ;; enable line numbers globally
 (fset 'yes-or-no-p 'y-or-n-p) ;; Treat 'y' or <CR> as yes, 'n' as no.
@@ -182,6 +182,108 @@ justify (as for `fill-paragraph')."
 (setq auto-revert-verbose nil)
 
 ;; -------------------------------------
+;; Emojify
+;; -------------------------------------
+
+(use-package emojify
+  :ensure t
+  :hook (after-init . global-emojify-mode)
+  :config
+  (setq emojify-display-style 'unicode)
+  (setq emojify-emoji-styles '(unicode))
+  (bind-key* (kbd "C-c ;") #'emojify-insert-emoji))
+
+;; -------------------------------------
+;; Mastodon
+;; -------------------------------------
+
+(use-package mastodon
+  :ensure t
+  :config
+  (setq mastodon-instance-url "https://ecoevo.social"
+        mastodon-active-user "ghislainv"))
+
+;; -------------------------------------
+;; Mu4e
+;; -------------------------------------
+
+;; https://f-santos.gitlab.io/2020-04-24-mu4e.html
+;; https://git.mmk2410.org/mmk2410/dotfiles/commit/879b26f5c2c12b58b67b598d98d98903b5a7f1bd
+;; https://www.djcbsoftware.nl/code/mu/mu4e.html
+
+;; See also
+;; https://github.com/munen/emacs.d/blob/master/configuration.org#mu4e
+
+(use-package mu4e
+  :load-path "/usr/share/emacs/site-lisp/elpa/mu4e-1.10.8/"
+  :ensure nil
+  :init
+  (add-hook 'mu4e-headers-mode-hook (lambda () (display-line-numbers-mode 0)))
+  :bind (:map mu4e-headers-mode-map
+	 ("C-c c" . mu4e-org-store-and-capture)
+	 :map mu4e-view-mode-map
+	 ("C-c c" . mu4e-org-store-and-capture))
+  :config
+  ;; Mail user agent
+  (setq mail-user-agent 'mu4e-user-agent)
+  ;; SMTP settings:
+  (setq send-mail-function 'smtpmail-send-it)       ; should not be modified
+  (setq smtpmail-smtp-server "mail.infomaniak.com") ; host running SMTP server
+  (setq smtpmail-smtp-service 465)                  ; SMTP service port number
+  (setq smtpmail-stream-type 'ssl)                  ; type of SMTP connections to use
+  ;; Mail folders:
+  (setq mu4e-drafts-folder "/Drafts")
+  (setq mu4e-sent-folder   "/Sent")
+  (setq mu4e-trash-folder  "/Trash")
+  (setq mu4e-refile-folder "/Archives")
+  ;; The command used to get your emails (adapt this line, see section 2.3):
+  (setq mu4e-get-mail-command "mbsync --config ~/.config/emacs/mu4e/.mbsyncrc mtloz")
+  ;; Further customization:
+  (setq mu4e-update-interval (* 5 60)             ; refresh email every 5 minutes
+	mu4e-headers-auto-update t                ; avoid to type `g' to update
+	mu4e-compose-signature-auto-include t     ; I want a message signature
+	mu4e-use-fancy-chars nil                  ; allow fancy icons for mail threads
+	mu4e-search-include-related nil           ; Do not include related messages in headers
+	mu4e-search-threads nil                   ; Do not show threads
+	mu4e-change-filenames-when-moving t)      ; This is set to 't' to avoid mail syncing issues when using mbsync
+  ;; Faster reindexing (not with mtloz)
+  ;;(setq mu4e-index-cleanup nil    ; don't do a full cleanup check
+  ;;	mu4e-index-lazy-check t)  ; don't consider up-to-date dirs
+  ;; Date format
+  (setq mu4e-headers-date-format "%Y-%m-%d")
+  (setq mu4e-headers-time-format "%H:%M")
+  ;; Headers
+  (setq mu4e-headers-fields
+	'((:human-date . 12)
+	 (:flags . 6)
+	 (:mailing-list . 10)
+	 (:from-or-to . 22)
+	 (:subject)))
+  ;; Signature
+  (defvar gv/signature
+	(concat
+	 "-------------------------------------------------------------------\n"
+	 "Ghislain VIEILLEDENT\n"
+	 "Phone: +687.97.18.15 (New Caledonian No.)\n"
+	 "WhatsApp: +33.6.24.62.65.07 (French No.)\n"
+	 "E-mail: ghislainv(at)mtloz(dot)fr\n"
+	 "Web site: https://ghislainv.fr\n"
+	 "-------------------------------------------------------------------\n")
+	"My email signature")
+  (setq mu4e-compose-signature gv/signature)
+  ;; Do not reply to yourself:
+  (setq mu4e-compose-dont-reply-to-self t))
+
+;; -------------------------------------
+;; org-msg
+;; -------------------------------------
+
+(use-package org-msg
+  :ensure t
+  :config
+  (org-msg-mode 0))
+
+;; -------------------------------------
 ;; Icons
 ;; -------------------------------------
 
@@ -237,10 +339,10 @@ justify (as for `fill-paragraph')."
   :ensure t
   :config
   (elfeed-org)
-  (defvar elfeed-org-files
+  (defvar gv/elfeed-org-files
     (list (expand-file-name "elfeed/elfeed.org" user-emacs-directory))
     "List of elfeed.org files.")
-  (setq rmh-elfeed-org-files elfeed-org-files)
+  (setq rmh-elfeed-org-files gv/elfeed-org-files)
   )
 
 ;; -------------------------------------
@@ -254,8 +356,8 @@ justify (as for `fill-paragraph')."
   (pdf-tools-install)
   (setq-default pdf-view-display-size 'fit-page)
   (defun gv/turn-off-line-numbers ()
-	"Disable line numbering in the current buffer."
-	(display-line-numbers-mode -1))
+    "Disable line numbering in the current buffer."
+    (display-line-numbers-mode -1))
   :hook (pdf-view-mode . gv/turn-off-line-numbers)
   :custom
   (pdf-annot-activate-created-annotations t "automatically annotate highlights"))
@@ -270,37 +372,37 @@ justify (as for `fill-paragraph')."
   :ensure t
   :bind ("C-x g" . magit-status))
 
-;; -------------------------------------
-;; TREE CONFIGURATION
-;; -------------------------------------
+;; ;; -------------------------------------
+;; ;; TREE CONFIGURATION
+;; ;; -------------------------------------
 
-;; Configuration de Treemacs
-;; https://medspx.fr/blog/Debian/emacs_2020
-(use-package treemacs
-  :ensure t
-  :defer t
-  :bind ("C-²" . treemacs-select-window)
-  :config
-  (setq treemacs-width 30
-	treemacs-indentation '(6 px)
-	treemacs-is-never-other-window t
-	treemacs-width-is-initially-locked nil
-	treemacs-space-between-root-nodes nil
-	treemacs-collapse-dirs 4
-	treemacs-sorting 'alphabetic-case-insensitive-asc
-	treemacs-text-scale -1)
-  ;;(treemacs-indent-guide-mode)
-  (treemacs-resize-icons 14)
-  (treemacs-follow-mode t)
-  (treemacs-tag-follow-mode t)
-  (treemacs-filewatch-mode t)
-  (treemacs-fringe-indicator-mode 'always)
-  (treemacs-hide-gitignored-files-mode nil))
+;; ;; Configuration de Treemacs
+;; ;; https://medspx.fr/blog/Debian/emacs_2020
+;; (use-package treemacs
+;;   :ensure t
+;;   :defer t
+;;   :bind ("C-²" . treemacs-select-window)
+;;   :config
+;;   (setq treemacs-width 30
+;; 	treemacs-indentation '(6 px)
+;; 	treemacs-is-never-other-window t
+;; 	treemacs-width-is-initially-locked nil
+;; 	treemacs-space-between-root-nodes nil
+;; 	treemacs-collapse-dirs 4
+;; 	treemacs-sorting 'alphabetic-case-insensitive-asc
+;; 	treemacs-text-scale -1)
+;;   ;;(treemacs-indent-guide-mode)
+;;   (treemacs-resize-icons 14)
+;;   (treemacs-follow-mode t)
+;;   (treemacs-tag-follow-mode t)
+;;   (treemacs-filewatch-mode t)
+;;   (treemacs-fringe-indicator-mode 'always)
+;;   (treemacs-hide-gitignored-files-mode nil))
 
-;; Treemacs avec support magit
-(use-package treemacs-magit
-  :after (treemacs magit)
-  :ensure t)
+;; ;; Treemacs avec support magit
+;; (use-package treemacs-magit
+;;   :after (treemacs magit)
+;;   :ensure t)
 
 ;; -------------------------------------
 ;; YAML
@@ -508,13 +610,12 @@ justify (as for `fill-paragraph')."
   (LaTeX-mode . citar-capf-setup)
   (org-mode . citar-capf-setup)
   :custom
-  (org-cite-global-bibliography '("~/Documents/Bibliography/biblio.bib"))
   (org-cite-insert-processor 'citar)
   (org-cite-follow-processor 'citar)
   (org-cite-activate-processor 'citar)
-  (citar-bibliography org-cite-global-bibliography)
+  (citar-bibliography "~/Documents/Bibliography/biblio.bib")
   (citar-library-paths '("~/Documents/Bibliography/Articles/"))
-  (citar-library-file-extensions '("pdf" "jpg"))
+  (citar-library-file-extensions '("pdf" "jpg" "docx"))
   (citar-file-additional-files-separator "-")
   (citar-notes-paths '("~/Documents/Bibliography/Notes/"))
   ;; optional: org-cite-insert is also bound to C-c C-x C-@
@@ -760,6 +861,7 @@ justify (as for `fill-paragraph')."
 ;; In css mode, htmlize uses cascading style sheets to specify colors
 (require 'htmlize)
 (setq org-html-htmlize-output-type 'css)
+(setq org-html-postamble nil)
 
 ;; Function to execute the code bock and move to the next
 (defun execute-code-block-and-move-to-next ()
@@ -891,6 +993,11 @@ justify (as for `fill-paragraph')."
 (require 'oc-csl)
 (require 'oc-natbib)
 
+;; CSL directory
+(defvar gv/csldir (expand-file-name "~/Documents/Bibliography/csl")
+  "CSL directory.")
+(setq org-cite-csl-styles-dir gv/csldir)
+
 ;; Multilines bold
 (with-eval-after-load 'org
   ;; Allow multiple line Org emphasis markup.
@@ -929,7 +1036,7 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
  '("r" "#+begin_src R :results output :session *R* :exports both\n\n#+end_src" "<src lang=\"R\">\n\n</src>"))
 
 (rrmooc/add-org-template
- '("R" "#+begin_src R :results output graphics :file (org-babel-temp-file \"figure\" \".png\") :exports both :width 600 :height 400 :session *R* \n\n#+end_src" "<src lang=\"R\">\n\n</src>"))
+ '("R" "#+begin_src R :results graphics file :file (org-babel-temp-file \"figure\" \".png\") :exports both :width 600 :height 400 :session *R* \n\n#+end_src" "<src lang=\"R\">\n\n</src>"))
 
 (rrmooc/add-org-template
  '("RR" "#+begin_src R :results output graphics :file  (org-babel-temp-file (concat (file-name-directory (or load-file-name buffer-file-name)) \"figure-\") \".png\") :exports both :width 600 :height 400 :session *R* \n\n#+end_src" "<src lang=\"R\">\n\n</src>"))
@@ -980,9 +1087,9 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
   :config
   (setq org-agenda-include-diary t)
   (setq org-agenda-files '("~/kDrive/Notes/notes_work.org"
-						   "~/kDrive/Notes/notes_perso.org"
-						   "~/kDrive/Notes/todos.org"
-						   "~/kDrive/Notes/events.org")))
+			   "~/kDrive/Notes/notes_perso.org"
+			   "~/kDrive/Notes/todos.org"
+			   "~/kDrive/Notes/events.org")))
 
 ;; Using org-caldav to export events using CalDAV
 ;; https://github.com/dengste/org-caldav
@@ -1034,7 +1141,10 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 	 "** %?\n%t")
 	("n" "Note" entry
 	 (file+headline org-default-notes-file "Notes")
-	 "** %?\n%t" :empty-lines 1)))
+	 "** %?\n%t" :empty-lines 1)
+	("A" "Answer email (perso)" entry
+	 (file+headline gv/org-default-todos-file "Personal tasks")
+	 "*** TODO %:fromname: %a %?")))
 
 ;; todo keywords
 (setq org-todo-keywords
@@ -1121,5 +1231,54 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 	max-mini-window-height 15)
   (which-key-setup-side-window-bottom))
 
+;; The `consult' package provides lots of commands that are enhanced
+;; variants of basic, built-in functionality.  One of the headline
+;; features of `consult' is its preview facility, where it shows in
+;; another Emacs window the context of what is currently matched in
+;; the minibuffer.  Here I define key bindings for some commands you
+;; may find useful.  The mnemonic for their prefix is "alternative
+;; search" (as opposed to the basic C-s or C-r keys).
+(use-package consult
+  :ensure t
+  :bind (;; A recursive grep
+         ("M-s M-g" . consult-grep)
+         ;; Search for files names recursively
+         ("M-s M-f" . consult-find)
+         ;; Search through the outline (headings) of the file
+         ("M-s M-o" . consult-outline)
+         ;; Search the current buffer
+         ("M-s M-l" . consult-line)
+         ;; Switch to another buffer, or bookmarked file, or recently
+         ;; opened file.
+         ("M-s M-b" . consult-buffer)))
+
+;; The `embark' package lets you target the thing or context at point
+;; and select an action to perform on it.  Use the `embark-act'
+;; command while over something to find relevant commands.
+;;
+;; When inside the minibuffer, `embark' can collect/export the
+;; contents to a fully fledged Emacs buffer.  The `embark-collect'
+;; command retains the original behaviour of the minibuffer, meaning
+;; that if you navigate over the candidate at hit RET, it will do what
+;; the minibuffer would have done.  In contrast, the `embark-export'
+;; command reads the metadata to figure out what category this is and
+;; places them in a buffer whose major mode is specialised for that
+;; type of content.  For example, when we are completing against
+;; files, the export will take us to a `dired-mode' buffer; when we
+;; preview the results of a grep, the export will put us in a
+;; `grep-mode' buffer.
+(use-package embark
+  :ensure t
+  :bind (("C-." . embark-act)
+         :map minibuffer-local-map
+         ("C-c C-c" . embark-collect)
+         ("C-c C-e" . embark-export)))
+
+;; The `embark-consult' package is glue code to tie together `embark'
+;; and `consult'.
+(use-package embark-consult
+  :ensure t)
+
 ;;; ----------------
 ;;; dotemacs.el ends here
+(put 'downcase-region 'disabled nil)
