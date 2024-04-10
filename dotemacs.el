@@ -796,7 +796,7 @@ justify (as for `fill-paragraph')."
 (use-package pyvenv
   :ensure t
   :init
-  (setenv "WORKON_HOME" "~/.pyenv/versions/miniconda3-latest/envs")
+  (setenv "WORKON_HOME" "~/venvs")
   :config
   (pyvenv-mode 1))
 
@@ -1278,6 +1278,20 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 ;; and `consult'.
 (use-package embark-consult
   :ensure t)
+
+;;; ----------------
+;;; world-clock
+;;; ----------------
+
+(setq world-clock-list
+      '(("America/Los_Angeles" "Seattle")
+        ("America/New_York" "New York")
+        ("Europe/London" "London")
+        ("Europe/Paris" "Paris")
+        ("Europe/Sofia" "Sofia")
+        ("Asia/Calcutta" "Bangalore")
+        ("Asia/Tokyo" "Tokyo")
+	("Pacific/Noumea" "Noumea")))
 
 ;;; ----------------
 ;;; dotemacs.el ends here
