@@ -107,6 +107,11 @@
 (set-language-environment "UTF-8")
 (prefer-coding-system 'utf-8)
 
+;; Latitude and longitude for sunrise and sunset
+;; M-x sunrise-sunset
+(setq calendar-latitude -22.28
+	  calendar-longitude 166.46)
+
 ;; System locale to use for formatting time values.
 (setq system-time-locale "C")         ; Make sure that the weekdays in the
                                       ; time stamps of your Org mode files and
@@ -254,11 +259,20 @@ justify (as for `fill-paragraph')."
   (setq mu4e-headers-time-format "%H:%M")
   ;; Headers
   (setq mu4e-headers-fields
-	'((:human-date . 12)
-	 (:flags . 6)
-	 (:mailing-list . 10)
-	 (:from-or-to . 22)
-	 (:subject)))
+		'((:human-date . 12)
+		  (:flags . 6)
+		  (:mailing-list . 10)
+		  (:from-or-to . 22)
+		  (:subject)))
+  ;; Maildir shortcuts
+  (setq	mu4e-maildir-shortcuts
+		'((:maildir "/INBOX" :key ?i)
+		  (:maildir "/Drafts" :key ?d)
+		  (:maildir "/Archives" :key ?a)
+		  (:maildir "/Promotions" :key ?p)
+		  (:maildir "/Archives" :key ?a)
+		  (:maildir "/Trash" :key ?t)
+		  (:maildir "/Sent" :key ?s)))
   ;; Signature
   (defvar gv/signature
 	(concat
@@ -272,7 +286,13 @@ justify (as for `fill-paragraph')."
 	"My email signature")
   (setq mu4e-compose-signature gv/signature)
   ;; Do not reply to yourself:
-  (setq mu4e-compose-dont-reply-to-self t))
+  (setq mu4e-compose-dont-reply-to-self t)
+  ;; Trash moves message but does not set flag T
+  ;; https://github.com/djcb/mu/issues/1136#issuecomment-1229005006
+  (setf (plist-get (alist-get 'trash mu4e-marks) :action)
+	(lambda (docid msg target)
+          (mu4e--server-move docid (mu4e--mark-check-target target) "-N"))) ; Instead of "+T-N"
+  )
 
 ;; -------------------------------------
 ;; org-msg
@@ -862,6 +882,7 @@ justify (as for `fill-paragraph')."
 (require 'htmlize)
 (setq org-html-htmlize-output-type 'css)
 (setq org-html-postamble nil)
+(setq org-export-allow-bind-keywords t)
 
 ;; Function to execute the code bock and move to the next
 (defun execute-code-block-and-move-to-next ()
@@ -1294,5 +1315,12 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 	("Pacific/Noumea" "Noumea")))
 
 ;;; ----------------
+;;; EIN
+;;; ----------------
+
+(use-package ein
+  :ensure t)
+
+
+;;; ----------------
 ;;; dotemacs.el ends here
-(put 'downcase-region 'disabled nil)
