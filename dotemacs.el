@@ -220,11 +220,12 @@ justify (as for `fill-paragraph')."
 ;; https://github.com/munen/emacs.d/blob/master/configuration.org#mu4e
 
 (use-package mu4e
-  :load-path "/usr/share/emacs/site-lisp/elpa/mu4e-1.10.8/"
+  :load-path "/usr/share/emacs/site-lisp/elpa/mu4e-1.12.4/"
   :ensure nil
   :init
   (add-hook 'mu4e-headers-mode-hook (lambda () (display-line-numbers-mode 0)))
-  :bind (:map mu4e-headers-mode-map
+  :bind (("C-c m" . mu4e)
+	 :map mu4e-headers-mode-map
 	 ("C-c c" . mu4e-org-store-and-capture)
 	 :map mu4e-view-mode-map
 	 ("C-c c" . mu4e-org-store-and-capture))
@@ -270,7 +271,6 @@ justify (as for `fill-paragraph')."
 		  (:maildir "/Drafts" :key ?d)
 		  (:maildir "/Archives" :key ?a)
 		  (:maildir "/Promotions" :key ?p)
-		  (:maildir "/Archives" :key ?a)
 		  (:maildir "/Trash" :key ?t)
 		  (:maildir "/Sent" :key ?s)))
   ;; Signature
@@ -1152,10 +1152,10 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 	 (file+headline gv/org-default-todos-file "Personal tasks")
 	 "*** TODO %?")
 	("m" "Meeting (work)" entry
-	 (file+headline gv/org-default-events-file "Work meetings, TZ Nouméa")
+	 (file+headline gv/org-default-events-file "Work meetings, TZ Santiago")
 	 "** %?\n%t")
 	("M" "Meeting (personal appointment)" entry
-	 (file+headline gv/org-default-events-file "Personal appointments, TZ Nouméa")
+	 (file+headline gv/org-default-events-file "Personal appointments, TZ Santiago")
 	 "** %?\n%t")
 	("e" "Event (non professional event)" entry
 	 (file+headline gv/org-default-events-file "Other events")
