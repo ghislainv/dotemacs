@@ -110,7 +110,7 @@
 ;; Latitude and longitude for sunrise and sunset
 ;; M-x sunrise-sunset
 (setq calendar-latitude -22.28
-	  calendar-longitude 166.46)
+      calendar-longitude 166.46)
 
 ;; System locale to use for formatting time values.
 (setq system-time-locale "C")         ; Make sure that the weekdays in the
@@ -638,6 +638,9 @@ justify (as for `fill-paragraph')."
   (citar-library-file-extensions '("pdf" "jpg" "docx"))
   (citar-file-additional-files-separator "-")
   (citar-notes-paths '("~/Documents/Bibliography/Notes/"))
+  (citar-citeproc-csl-styles-dir org-cite-csl-styles-dir)
+  (citar-citeproc-csl-style "ecology.csl")
+  (citar-format-reference-function 'citar-citeproc-format-reference)
   ;; optional: org-cite-insert is also bound to C-c C-x C-@
   :bind
   (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
@@ -1152,10 +1155,10 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 	 (file+headline gv/org-default-todos-file "Personal tasks")
 	 "*** TODO %?")
 	("m" "Meeting (work)" entry
-	 (file+headline gv/org-default-events-file "Work meetings, TZ Santiago")
+	 (file+headline gv/org-default-events-file "Work meetings, TZ Nouméa")
 	 "** %?\n%t")
 	("M" "Meeting (personal appointment)" entry
-	 (file+headline gv/org-default-events-file "Personal appointments, TZ Santiago")
+	 (file+headline gv/org-default-events-file "Personal appointments, TZ Nouméa")
 	 "** %?\n%t")
 	("e" "Event (non professional event)" entry
 	 (file+headline gv/org-default-events-file "Other events")
@@ -1321,6 +1324,34 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 (use-package ein
   :ensure t)
 
+;;; -------------------------
+;;; PO mode for translations
+;;; -------------------------
+
+(use-package po-mode
+  :ensure nil
+  :config
+  (autoload 'po-mode "po-mode" "Major mode for translators to edit PO files" t)
+  (setq auto-mode-alist (cons '("\\.po\\'\\|\\.po\\." . po-mode) auto-mode-alist)))
+
+;;; -------------------------
+;;; Denote
+;;; -------------------------
+
+(use-package denote
+  :ensure t
+  :custom
+  (denote-directory "/home/ghislain/kDrive/Notes"))
+
+;;; -------------------------
+;;; Translate
+;;; -------------------------
+
+(use-package go-translate
+  :ensure t
+  :config
+  (setq gt-langs '(en fr))
+  (setq gt-default-translator (gt-translator :engines (gt-deepl-engine :key "7a3ff352-c4cb-4efe-9f71-94a992e5352b:fx"))))
 
 ;;; ----------------
 ;;; dotemacs.el ends here
