@@ -321,10 +321,6 @@ justify (as for `fill-paragraph')."
   :ensure nil
   :defines image-dired-external-viewer
   :config
-  (use-package treemacs-icons-dired
-    :ensure t
-    :if (display-graphic-p)
-    :hook (dired-mode . treemacs-icons-dired-mode))
   ;; Split window, Dired tries to guess a default target directory
   (setq dired-dwim-target t
 	delete-by-moving-to-trash t)
@@ -334,6 +330,10 @@ justify (as for `fill-paragraph')."
   (setq image-dired-external-viewer "/usr/bin/gimp")
   )
 
+(use-package all-the-icons-dired
+  :ensure t
+  :hook (dired-mode . all-the-icons-dired-mode))
+  
 ;; -------------------------------------
 ;; IBUFFER
 ;; -------------------------------------
@@ -390,7 +390,6 @@ justify (as for `fill-paragraph')."
 ;; MAGIT
 ;; -------------------------------------
 
-;; Magit
 (use-package magit
   :if (executable-find "git")
   :ensure t
