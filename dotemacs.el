@@ -165,8 +165,10 @@ justify (as for `fill-paragraph')."
   :ensure t
   :diminish company-mode
   :custom
-  (company-minimum-prefix-length 1)
+  (company-minimum-prefix-length 4)
   (company-idle-delay 0.1)
+  (company-dabbrev-minimum-length 8)
+  (company-selection-wrap-around t)
   :config
   (global-company-mode 1))
 
@@ -368,6 +370,8 @@ justify (as for `fill-paragraph')."
 ;; -------------------------------------
 ;; PDF-TOOLS
 ;; -------------------------------------
+;; Replace DocView for pdf
+;; https://github.com/vedang/pdf-tools
 
 (use-package pdf-tools
   :ensure t
@@ -453,18 +457,18 @@ justify (as for `fill-paragraph')."
   "Displaying buffers with ESS."
   (setq display-buffer-alist
 	`(("^\\*R"
-           (display-buffer-reuse-window display-buffer-in-side-window)
+       (display-buffer-reuse-window display-buffer-in-side-window)
 	   (side . right)
 	   (slot . -1)
            (window-width . 0.33)
-           (reusable-frames . nil)
+           (reusable-frames . t)
 	   (dedicated . t))
           ("^\\*Help"
            (display-buffer-reuse-window display-buffer-in-side-window)
 	   (side . right)
            (slot . 1)
            (window-width . 0.33)
-           (reusable-frames . nil))))
+           (reusable-frames . t))))
   ;; (setq display-buffer-alist
   ;; 	'(("*R"
   ;; 	   nil
@@ -619,7 +623,16 @@ justify (as for `fill-paragraph')."
 (use-package biblio
   :ensure t
   :config
-  (setq biblio-crossref-user-email-address "ghislainv@mtloz.fr"))
+  (setq biblio-crossref-user-email-address "ghislainv@mtloz.fr")
+  (defun add-doi () "Adding a doi to .bib file"
+	(interactive)
+	(progn
+	  (defvar gv/mydoi "" "DOI variable")
+      (setq gv/mydoi (read-string "DOI "))
+      (find-file "~/Documents/Bibliography/biblio.bib")
+      (goto-char (point-max))
+	  (forward-line -1)
+      (biblio-doi-insert-bibtex gv/mydoi))))
 
 ;; citar
 ;; https://github.com/emacs-citar/citar#configuration
@@ -633,7 +646,7 @@ justify (as for `fill-paragraph')."
   (org-cite-insert-processor 'citar)
   (org-cite-follow-processor 'citar)
   (org-cite-activate-processor 'citar)
-  (citar-bibliography "~/Documents/Bibliography/biblio.bib")
+  (citar-bibliography (list (expand-file-name "~/Documents/Bibliography/biblio.bib")))
   (citar-library-paths '("~/Documents/Bibliography/Articles/"))
   (citar-library-file-extensions '("pdf" "jpg" "docx"))
   (citar-file-additional-files-separator "-")
@@ -697,8 +710,11 @@ justify (as for `fill-paragraph')."
 (add-hook 'shell-mode-hook #'zsh-shell-mode-setup)
 
 ;; Path from shell
+;; https://github.com/purcell/exec-path-from-shell
 ;;(dolist (var '("WDPA_KEY"))
 ;;   (add-to-list 'exec-path-from-shell-variables var))
+;; Remove "-i" from exec-path-from-shell-arguments for non-interactive shell
+(setq exec-path-from-shell-arguments '("-l"))
 (when (memq window-system '(mac ns x))
   (exec-path-from-shell-initialize))
 
@@ -717,6 +733,25 @@ justify (as for `fill-paragraph')."
   :load-path "essh/essh.el"
   :init
   :hook (sh-mode . gv/essh-sh))
+
+;; --------------------------------------
+;; ORG-MODERN
+;; --------------------------------------
+
+;; (use-package org-modern
+;;   :ensure t
+;;   :hook
+;;   (org-mode . global-org-modern-mode)
+;;   :custom
+;;   (org-modern-star 'replace)
+;;   (org-modern-list '((?- . "•")))
+;;   (org-modern-timestamp nil)
+;;   (org-modern-todo nil)
+;;   (org-modern-tag nil)
+;;   (org-modern-block-name nil)
+;;   (org-modern-keyword nil)
+;;   (org-modern-checkbox nil)
+;;   (org-modern-table nil))
 
 ;; --------------------------------------
 ;; TRAMP
@@ -870,17 +905,29 @@ justify (as for `fill-paragraph')."
 ;; Settings
 (setq org-hide-leading-stars t
       org-startup-indented t)
-(setq org-alphabetical-lists t)
-;;(setq org-hide-emphasis-markers t) ;; to hide the *,=, or / markers
+;;(setq org-alphabetical-lists t)
+(setq org-hide-emphasis-markers t) ;; to hide the *,=, or / markers
 (setq org-pretty-entities t)       ;; to have \alpha, \to and others display as utf8 http://orgmode.org/manual/Special-symbols.html
 (setq org-src-fontify-natively t)  ;; you want this to activate coloring in blocks
 (setq org-fontify-whole-heading-line t) ;; Fontify the whole line for headings (with a background color).
 (setq org-src-tab-acts-natively t) ;; you want this to have completion in blocks
 (setq org-src-preserve-indentation t)
 (setq org-export-with-smart-quotes t)
-(setq org-edit-src-content nil)
+;;(setq org-edit-src-content nil)
 (setq org-startup-with-inline-images t)
 (setq org-image-actual-width 600)
+(setq org-use-sub-superscripts "{}")
+
+;; The org-appear package helps by displaying the markers while the cursor is on a rich text word.
+(use-package org-appear
+  :after org
+  :ensure t
+  :custom
+  (org-appear-autolinks t)
+  (org-appear-autoemphasis t)
+  :hook
+  (org-mode . org-appear-mode))
+
 ;; In css mode, htmlize uses cascading style sheets to specify colors
 (require 'htmlize)
 (setq org-html-htmlize-output-type 'css)
@@ -1017,6 +1064,10 @@ justify (as for `fill-paragraph')."
 (require 'oc-csl)
 (require 'oc-natbib)
 
+;; Biblio
+(setq org-cite-global-bibliography
+	  (list (expand-file-name "~/Documents/Bibliography/biblio.bib")))
+
 ;; CSL directory
 (defvar gv/csldir (expand-file-name "~/Documents/Bibliography/csl")
   "CSL directory.")
@@ -1052,6 +1103,9 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
   ;; this template is predefined in the new templating system
   (rrmooc/add-org-template
    '("s" "#+begin_src ?\n\n#+end_src" "<src lang=\"?\">\n\n</src>")))
+
+(rrmooc/add-org-template
+ '("S" "#+begin_src shell\n\n#+end_src" "<src lang=\"shell\">\n\n</src>"))
 
 (rrmooc/add-org-template
  '("m" "#+begin_src emacs-lisp\n\n#+end_src" "<src lang=\"emacs-lisp\">\n\n</src>"))
@@ -1341,7 +1395,15 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 (use-package denote
   :ensure t
   :custom
-  (denote-directory "/home/ghislain/kDrive/Notes"))
+  (denote-directory "/home/ghislain/kDrive/Notes/denote")
+  :config
+  (setq denote-org-front-matter
+  "#+title:      %s
+#+date:       %s
+#+filetags:   %s
+#+identifier: %s
+#+options: ^:{}
+\n"))
 
 ;;; -------------------------
 ;;; Translate
@@ -1352,6 +1414,17 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
   :config
   (setq gt-langs '(en fr))
   (setq gt-default-translator (gt-translator :engines (gt-deepl-engine :key "7a3ff352-c4cb-4efe-9f71-94a992e5352b:fx"))))
+
+;; --------------------------
+;; Ebooks
+;; --------------------------
+
+;; Read ePub files
+(use-package nov
+  :ensure t
+  :init
+  (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode)))
+
 
 ;;; ----------------
 ;;; dotemacs.el ends here
