@@ -33,7 +33,6 @@
 			flycheck
 			htmlize
 			jedi
-			leuven-theme
 			olivetti
 			org
 			org-contrib
@@ -72,7 +71,10 @@
 ;; --------------------------------------
 
 ;; Themes
-(load-theme 'leuven t)
+(use-package leuven-theme
+  :ensure t
+  :config
+  (load-theme 'leuven t))
 ;; (load-theme 'material t)
 ;; (load-theme 'zenburn t)
 ;; (load-theme 'tango-2 t)
@@ -106,11 +108,6 @@
 (set-keyboard-coding-system 'utf-8)
 (set-language-environment "UTF-8")
 (prefer-coding-system 'utf-8)
-
-;; Latitude and longitude for sunrise and sunset
-;; M-x sunrise-sunset
-(setq calendar-latitude -22.28
-      calendar-longitude 166.46)
 
 ;; System locale to use for formatting time values.
 (setq system-time-locale "C")         ; Make sure that the weekdays in the
@@ -311,7 +308,8 @@ justify (as for `fill-paragraph')."
 
 ;; Gestion des icônes par all-the-icons
 (use-package all-the-icons
-  :ensure t)
+  :ensure t
+  :if (display-graphic-p))
 
 ;; -------------------------------------
 ;; Dired
@@ -327,13 +325,19 @@ justify (as for `fill-paragraph')."
   ;; Activate dired-x
   (require 'dired-x)
   ;; Define external image viewer/editor
-  (setq image-dired-external-viewer "/usr/bin/gimp")
-  )
+  (setq image-dired-external-viewer "/usr/bin/gimp"))
 
 (use-package all-the-icons-dired
-  :ensure t
-  :hook (dired-mode . all-the-icons-dired-mode))
-  
+    :hook (dired-mode . all-the-icons-dired-mode)
+    :config (setq all-the-icons-dired-monochrome nil))
+
+;; -------------------------------------
+;; Disk usage
+;; -------------------------------------
+
+(use-package disk-usage
+  :ensure t)
+
 ;; -------------------------------------
 ;; IBUFFER
 ;; -------------------------------------
@@ -456,17 +460,17 @@ justify (as for `fill-paragraph')."
   "Displaying buffers with ESS."
   (setq display-buffer-alist
 	`(("^\\*R"
-       (display-buffer-reuse-window display-buffer-in-side-window)
+	   (display-buffer-reuse-window display-buffer-in-side-window)
 	   (side . right)
 	   (slot . -1)
-           (window-width . 0.33)
+           (window-width . 0.50)
            (reusable-frames . t)
-	   (dedicated . t))
+	   (dedicated . nil))
           ("^\\*Help"
            (display-buffer-reuse-window display-buffer-in-side-window)
 	   (side . right)
            (slot . 1)
-           (window-width . 0.33)
+           (window-width . 0.50)
            (reusable-frames . t))))
   ;; (setq display-buffer-alist
   ;; 	'(("*R"
@@ -487,13 +491,12 @@ justify (as for `fill-paragraph')."
   :commands R
   :bind (:map ess-r-mode-map
               (";" . ess-insert-assign)
-              ;; RStudio equivalents
-              ("M--" . ess-insert-assign)
-              ("C-S-m" . gv/insert-r-pipe)
+              ("C-c =" . ess-insert-assign)
+              ("C-c :" . gv/insert-r-pipe)
               :map inferior-ess-r-mode-map
               (";" . ess-insert-assign)
-              ("M--" . ess-insert-assign)
-              ("C-S-m" . gv/insert-r-pipe))
+              ("C-c =" . ess-insert-assign)
+              ("C-c :" . gv/insert-r-pipe))
   :config
   ;; Style
   (setq ess-style 'RStudio)
@@ -743,7 +746,8 @@ justify (as for `fill-paragraph')."
 ;;   (org-mode . global-org-modern-mode)
 ;;   :custom
 ;;   (org-modern-star 'replace)
-;;   (org-modern-list '((?- . "•")))
+;;   (org-modern-list nil)
+;;   ;;(org-modern-list '((?- . "•")))
 ;;   (org-modern-timestamp nil)
 ;;   (org-modern-todo nil)
 ;;   (org-modern-tag nil)
@@ -1127,6 +1131,19 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 (rrmooc/add-org-template
  '("PP" "#+begin_src python :results file :session :var matplot_lib_filename=(org-babel-temp-file \"figure\" \".png\") :exports both\nimport matplotlib.pyplot as plt\n\nimport numpy\nx=numpy.linspace(-15,15)\nplt.figure(figsize=(10,5))\nplt.plot(x,numpy.cos(x)/x)\nplt.tight_layout()\n\nplt.savefig(matplot_lib_filename)\nmatplot_lib_filename\n#+end_src" "<src lang=\"python\">\n\n</src>"))
 
+;; Markdown to org
+;; http://yummymelon.com/devnull/converting-a-markdown-region-to-org-revisited.html
+(defun gv/markdown-to-org-region (start end)
+  "Convert Markdown formatted text in region (START, END) to Org.
+
+This command requires that pandoc (man page `pandoc(1)') be
+installed."
+  (interactive "r")
+  (shell-command-on-region
+   start end
+   "pandoc -f markdown -t org --wrap=preserve" t t))
+
+
 ;; --------------------------------------
 ;; KOMA LETTER
 ;; --------------------------------------
@@ -1162,11 +1179,21 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
   :after org
   :bind ("C-c a" . org-agenda)
   :config
-  (setq org-agenda-include-diary t)
+  (setq org-agenda-include-diary t) ;; See .config/emacs_ghvi/diary file
+  (setq diary-show-holidays-flag nil) ;; US holidays in calendar-holidays variables
   (setq org-agenda-files '("~/kDrive/Notes/notes_work.org"
 			   "~/kDrive/Notes/notes_perso.org"
 			   "~/kDrive/Notes/todos.org"
 			   "~/kDrive/Notes/events.org")))
+
+;; Casual calendar
+(use-package casual
+  :ensure t)
+
+;; To import an ics calendar
+;;https://etalab.github.io/jours-feries-france-data/ics/jours_feries_nouvelle-caledonie.ics
+;;(icalendar-import-file "~/Téléchargements/jours_feries_nouvelle-caledonie.ics"
+;;                       "~/.config/emacs_ghvi/diary")
 
 ;; Using org-caldav to export events using CalDAV
 ;; https://github.com/dengste/org-caldav
@@ -1230,22 +1257,22 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 ;; faces for specific TODO keywords
 (setq org-todo-keyword-faces
       '(("TODO" . org-todo)
-        ("STRT" . leuven-org-inprogress-kwd)
-        ("WAIT" . leuven-org-waiting-for-kwd)
-        ("SDAY" . leuven-org-someday-kwd)
+        ("STRT" . gv/org-inprogress-kwd)
+        ("WAIT" . gv/org-waiting-for-kwd)
+        ("SDAY" . gv/org-someday-kwd)
         ("DONE" . org-done)
         ("CANX" . org-done)))
 
 ;; Org non-standard faces
-(defface leuven-org-inprogress-kwd
+(defface gv/org-inprogress-kwd
   '((t (:weight bold :box (:line-width 1 :color "#D9D14A")
 		:foreground "#D9D14A" :background "#FCFCDC")))
   "Face used to display state STRT.")
-(defface leuven-org-waiting-for-kwd
+(defface gv/org-waiting-for-kwd
   '((t (:weight bold :box (:line-width 1 :color "#89C58F")
 		:foreground "#89C58F" :background "#E2FEDE")))
   "Face used to display state WAIT.")
-(defface leuven-org-someday-kwd
+(defface gv/org-someday-kwd
   '((t (:weight bold :box (:line-width 1 :color "#9EB6D4")
 		:foreground "#9EB6D4" :background "#E0EFFF")))
   "Face used to display state SDAY.")
@@ -1411,8 +1438,11 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
 (use-package go-translate
   :ensure t
   :config
-  (setq gt-langs '(en fr))
-  (setq gt-default-translator (gt-translator :engines (gt-deepl-engine :key "7a3ff352-c4cb-4efe-9f71-94a992e5352b:fx"))))
+  (setq gt-langs '(en es))
+  (setq gt-default-translator
+	(gt-translator
+	 :engines (gt-deepl-engine :key "7a3ff352-c4cb-4efe-9f71-94a992e5352b:fx")
+	 :render(gt-buffer-render))))
 
 ;; --------------------------
 ;; Ebooks
@@ -1424,6 +1454,17 @@ This function trasnorms OLD-STYLE-TEMPLATE in new style template"
   :init
   (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode)))
 
+;; --------------------------
+;; Calendar
+;; --------------------------
+
+;; Latitude and longitude for sunrise and sunset
+;; M-x sunrise-sunset
+(setq calendar-latitude 43.63) ;; -22.28
+(setq calendar-longitude 3.86) ;; 166.46
+(setq calendar-location-name "Montpellier, France")
+;; Weeks start on Monday
+(setq calendar-week-start-day 1)
 
 ;;; ----------------
 ;;; dotemacs.el ends here
