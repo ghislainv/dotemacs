@@ -219,7 +219,7 @@ justify (as for `fill-paragraph')."
 ;; https://github.com/munen/emacs.d/blob/master/configuration.org#mu4e
 
 (use-package mu4e
-  :load-path "/usr/share/emacs/site-lisp/elpa/mu4e-1.12.4/"
+  :load-path "/usr/share/emacs/site-lisp/elpa/mu4e-1.12.9/"
   :ensure nil
   :init
   (add-hook 'mu4e-headers-mode-hook (lambda () (display-line-numbers-mode 0)))
@@ -246,11 +246,12 @@ justify (as for `fill-paragraph')."
   ;; Further customization:
   (setq mu4e-update-interval (* 5 60)             ; refresh email every 5 minutes
 	mu4e-headers-auto-update t                ; avoid to type `g' to update
-	mu4e-compose-signature-auto-include t     ; I want a message signature
 	mu4e-use-fancy-chars nil                  ; allow fancy icons for mail threads
 	mu4e-search-include-related nil           ; Do not include related messages in headers
 	mu4e-search-threads nil                   ; Do not show threads
-	mu4e-change-filenames-when-moving t)      ; This is set to 't' to avoid mail syncing issues when using mbsync
+	mu4e-change-filenames-when-moving t       ; This is set to 't' to avoid mail syncing issues when using mbsync
+        mu4e-trash-without-flag t)                ; Trash moves message but does not set flag T
+  
   ;; Faster reindexing (not with mtloz)
   ;;(setq mu4e-index-cleanup nil    ; don't do a full cleanup check
   ;;	mu4e-index-lazy-check t)  ; don't consider up-to-date dirs
@@ -283,15 +284,10 @@ justify (as for `fill-paragraph')."
 	 "Web site: https://ghislainv.fr\n"
 	 "-------------------------------------------------------------------\n")
 	"My email signature")
-  (setq mu4e-compose-signature gv/signature)
-  ;; Do not reply to yourself:
-  (setq mu4e-compose-dont-reply-to-self t)
-  ;; Trash moves message but does not set flag T
-  ;; https://github.com/djcb/mu/issues/1136#issuecomment-1229005006
-  (setf (plist-get (alist-get 'trash mu4e-marks) :action)
-	(lambda (docid msg target)
-          (mu4e--server-move docid (mu4e--mark-check-target target) "-N"))) ; Instead of "+T-N"
-  )
+  (setq message-signature gv/signature)
+  ;; Do not reply to yourself
+  ;; A value of nil means exclude ‘user-mail-address’ only
+  (setq message-dont-reply-to-names nil))
 
 ;; -------------------------------------
 ;; org-msg
@@ -325,7 +321,9 @@ justify (as for `fill-paragraph')."
   ;; Activate dired-x
   (require 'dired-x)
   ;; Define external image viewer/editor
-  (setq image-dired-external-viewer "/usr/bin/gimp"))
+  (setq image-dired-external-viewer "/usr/bin/gimp")
+  ;; Human readable
+  (setq dired-listing-switches "-alFh"))
 
 (use-package all-the-icons-dired
     :hook (dired-mode . all-the-icons-dired-mode)
@@ -552,11 +550,11 @@ justify (as for `fill-paragraph')."
   (setenv "LANG" "en_US.UTF-8")
   (setq ispell-program-name "hunspell")
   ;; Configure French and English.
-  (setq ispell-dictionary "fr_FR,en_GB,en_US")
+  (setq ispell-dictionary "fr_FR,en_GB,en_US,es_ES")
   ;; ispell-set-spellchecker-params has to be called
   ;; before ispell-hunspell-add-multi-dic will work
   (ispell-set-spellchecker-params)
-  (ispell-hunspell-add-multi-dic "fr_FR,en_GB,en_US")
+  (ispell-hunspell-add-multi-dic "fr_FR,en_GB,en_US,es_ES")
   ;; For saving words to the personal dictionary, don't infer it from
   ;; the locale, otherwise it would save to ~/.hunspell_de_DE.
   (setq ispell-personal-dictionary "~/.hunspell_personal")
@@ -1421,7 +1419,7 @@ installed."
 (use-package denote
   :ensure t
   :custom
-  (denote-directory "/home/ghislain/kDrive/Notes/denote")
+  (denote-directory "/home/ghislain/kDrive/Notes")
   :config
   (setq denote-org-front-matter
   "#+title:      %s
@@ -1435,14 +1433,21 @@ installed."
 ;;; Translate
 ;;; -------------------------
 
+;; Install the curl program and the plz.el package.
+;; The request from go-translate will then be sent through curl,
+;; which is much better than the built-in url.el
+(use-package plz
+  :ensure t)
+
 (use-package go-translate
   :ensure t
+  :after plz
   :config
   (setq gt-langs '(en es))
   (setq gt-default-translator
 	(gt-translator
 	 :engines (gt-deepl-engine :key "7a3ff352-c4cb-4efe-9f71-94a992e5352b:fx")
-	 :render(gt-buffer-render))))
+	 :render (gt-insert-render :type 'replace))))
 
 ;; --------------------------
 ;; Ebooks
@@ -1465,6 +1470,15 @@ installed."
 (setq calendar-location-name "Montpellier, France")
 ;; Weeks start on Monday
 (setq calendar-week-start-day 1)
+
+;; --------------------------
+;; org-player
+;; --------------------------
+
+(use-package org-player
+  :load-path "~/.config/emacs/org-player"
+  :config
+  (load "org-player.el"))
 
 ;;; ----------------
 ;;; dotemacs.el ends here
