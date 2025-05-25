@@ -66,6 +66,9 @@
 (require 'use-package)
 (setq use-package-always-ensure 't)
 
+;; Absolute value for package-user-dir
+(setq package-user-dir (concat user-emacs-directory "elpa/"))
+
 ;; --------------------------------------
 ;; BASIC CUSTOMIZATION
 ;; --------------------------------------
@@ -1084,50 +1087,39 @@ justify (as for `fill-paragraph')."
   (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components))
 
 ;; Templates
-(defvar rrmooc/new-org-templates (version<= "9.2" (org-version))
-  "Boolean for version of org <= 9.2.")
-(when  rrmooc/new-org-templates
-  (require 'org-tempo))
+(require 'org-tempo)
 
-(require 'subr-x)
-(defun rrmooc/add-org-template (old-style-template)
-  "Defining new org templates.
-This function trasnorms OLD-STYLE-TEMPLATE in new style template"
-  (add-to-list 'org-structure-template-alist
-	       (if rrmooc/new-org-templates
-		   (cons
-		    (nth 0 old-style-template)
-		    (string-trim-right (substring (nth 1 old-style-template) 8 -9)))
-		 old-style-template)))
+(defun ghvi/add-org-template (template)
+  "Adding new org templates.
 
-(unless rrmooc/new-org-templates
-  ;; this template is predefined in the new templating system
-  (rrmooc/add-org-template
-   '("s" "#+begin_src ?\n\n#+end_src" "<src lang=\"?\">\n\n</src>")))
+TEMPLATE: Template to be added in the form of an association,
+i.e. \\='(a . b)."
+  (add-to-list 'org-structure-template-alist template))
 
-(rrmooc/add-org-template
- '("S" "#+begin_src shell\n\n#+end_src" "<src lang=\"shell\">\n\n</src>"))
+(ghvi/add-org-template
+ '("S" . "src shell"))
 
-(rrmooc/add-org-template
- '("m" "#+begin_src emacs-lisp\n\n#+end_src" "<src lang=\"emacs-lisp\">\n\n</src>"))
+(ghvi/add-org-template
+ '("m" . "src emacs-lisp"))
 
-(rrmooc/add-org-template
- '("r" "#+begin_src R :results output :session *R* :exports both\n\n#+end_src" "<src lang=\"R\">\n\n</src>"))
+(ghvi/add-org-template
+ '("r" . "src R :results output :session *R* :exports both"))
 
-(rrmooc/add-org-template
- '("R" "#+begin_src R :results graphics file :file (org-babel-temp-file \"figure\" \".png\") :exports both :width 600 :height 400 :session *R* \n\n#+end_src" "<src lang=\"R\">\n\n</src>"))
+(ghvi/add-org-template
+ '("R" . "src R :results graphics file :file (org-babel-temp-file \"figure\" \".png\") :exports both :width 600 :height 400 :session *R*"))
 
-(rrmooc/add-org-template
- '("RR" "#+begin_src R :results output graphics :file  (org-babel-temp-file (concat (file-name-directory (or load-file-name buffer-file-name)) \"figure-\") \".png\") :exports both :width 600 :height 400 :session *R* \n\n#+end_src" "<src lang=\"R\">\n\n</src>"))
+(ghvi/add-org-template
+ '("RR" . "src R :results output graphics :file  (org-babel-temp-file (concat (file-name-directory (or load-file-name buffer-file-name)) \"figure-\") \".png\") :exports both :width 600 :height 400 :session *R*"))
 
-(rrmooc/add-org-template
- '("p" "#+begin_src python :results output :exports both\n\n#+end_src" "<src lang=\"python\">\n\n</src>"))
+(ghvi/add-org-template
+ '("p" . "src python :results output :exports both"))
 
-(rrmooc/add-org-template
- '("P" "#+begin_src python :results output :session :exports both\n\n#+end_src" "<src lang=\"python\">\n\n</src>"))
+(ghvi/add-org-template
+ '("P" . "src python :results output :session :exports both"))
 
-(rrmooc/add-org-template
- '("PP" "#+begin_src python :results file :session :var matplot_lib_filename=(org-babel-temp-file \"figure\" \".png\") :exports both\nimport matplotlib.pyplot as plt\n\nimport numpy\nx=numpy.linspace(-15,15)\nplt.figure(figsize=(10,5))\nplt.plot(x,numpy.cos(x)/x)\nplt.tight_layout()\n\nplt.savefig(matplot_lib_filename)\nmatplot_lib_filename\n#+end_src" "<src lang=\"python\">\n\n</src>"))
+;; The following needs to be updated for Python with figure
+;; (ghvi/add-org-template
+;;  '("PP" . "src python :results file :session :var matplot_lib_filename=(org-babel-temp-file \"figure\" \".png\") :exports both\nimport matplotlib.pyplot as plt\n\nimport numpy\nx=numpy.linspace(-15,15)\nplt.figure(figsize=(10,5))\nplt.plot(x,numpy.cos(x)/x)\nplt.tight_layout()\n\nplt.savefig(matplot_lib_filename)\nmatplot_lib_filename"))
 
 ;; Markdown to org
 ;; http://yummymelon.com/devnull/converting-a-markdown-region-to-org-revisited.html
@@ -1479,6 +1471,46 @@ installed."
   :load-path "~/.config/emacs/org-player"
   :config
   (load "org-player.el"))
+
+;; -------------------------
+;; org-ai
+;; -------------------------
+
+(use-package org-ai
+  :load-path "~/.config/emacs/org-ai/"
+  :commands (org-ai-mode
+             org-ai-global-mode)
+  :defines org-ai-default-chat-model org-ai-openai-api-token
+  :hook (org-mode-hook . org-ai-mode) ; enable org-ai in org-mode
+  :init
+  (org-ai-global-mode) ; installs global keybindings on C-c M-a
+  :config
+  ;; API token is in .authinfo
+  (setq org-ai-default-chat-model "gpt-4o-mini")
+  (setq org-ai-image-model "dall-e-3")
+  (setq org-ai-image-default-size "1792x1024")
+  (setq org-ai-image-default-count 1)
+  (setq org-ai-image-default-style 'vivid)
+  (setq org-ai-image-default-quality 'hd)
+  (setq org-ai-image-directory (expand-file-name "images/org-ai/" org-directory)))
+
+;; Setting up speech input / output
+(use-package whisper
+  :load-path "~/.config/emacs/whisper/"
+  :bind ("M-s-r" . whisper-run) ; s is Windows key
+  :init
+  (load "whisper.el")
+  :config
+  (setq whisper-install-directory "/home/ghislain/Applications/"
+	whisper-model "base"
+        whisper-language "en"
+        whisper-translate nil
+	whisper-use-threads (/ (num-processors) 2)))
+
+(use-package greader
+  :ensure t)
+(require 'whisper)
+(require 'org-ai-talk)
 
 ;;; ----------------
 ;;; dotemacs.el ends here
