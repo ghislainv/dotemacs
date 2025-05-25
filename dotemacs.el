@@ -277,7 +277,7 @@ justify (as for `fill-paragraph')."
 		  (:maildir "/Trash" :key ?t)
 		  (:maildir "/Sent" :key ?s)))
   ;; Signature
-  (defvar gv/signature
+  (defvar ghvi/signature
 	(concat
 	 "-------------------------------------------------------------------\n"
 	 "Ghislain VIEILLEDENT\n"
@@ -287,7 +287,7 @@ justify (as for `fill-paragraph')."
 	 "Web site: https://ghislainv.fr\n"
 	 "-------------------------------------------------------------------\n")
 	"My email signature")
-  (setq message-signature gv/signature)
+  (setq message-signature ghvi/signature)
   ;; Do not reply to yourself
   ;; A value of nil means exclude ‘user-mail-address’ only
   (setq message-dont-reply-to-names nil))
@@ -366,10 +366,10 @@ justify (as for `fill-paragraph')."
   :ensure t
   :config
   (elfeed-org)
-  (defvar gv/elfeed-org-files
+  (defvar ghvi/elfeed-org-files
     (list (expand-file-name "elfeed/elfeed.org" user-emacs-directory))
     "List of elfeed.org files.")
-  (setq rmh-elfeed-org-files gv/elfeed-org-files)
+  (setq rmh-elfeed-org-files ghvi/elfeed-org-files)
   )
 
 ;; -------------------------------------
@@ -384,10 +384,10 @@ justify (as for `fill-paragraph')."
   :config
   (pdf-tools-install)
   (setq-default pdf-view-display-size 'fit-page)
-  (defun gv/turn-off-line-numbers ()
+  (defun ghvi/turn-off-line-numbers ()
     "Disable line numbering in the current buffer."
     (display-line-numbers-mode -1))
-  :hook (pdf-view-mode . gv/turn-off-line-numbers)
+  :hook (pdf-view-mode . ghvi/turn-off-line-numbers)
   :custom
   (pdf-annot-activate-created-annotations t "automatically annotate highlights"))
        
@@ -448,7 +448,7 @@ justify (as for `fill-paragraph')."
 ;; -------------------------------------
 
 ;; Insert pipe function
-(defun gv/insert-r-pipe ()
+(defun ghvi/insert-r-pipe ()
   "Insert the pipe operator in R, |>."
   (interactive)
   (just-one-space 1)
@@ -457,7 +457,7 @@ justify (as for `fill-paragraph')."
 
 ;; Controlling buffer display
 ;; (see section in http://ess.r-project.org/ess.pdf)
-(defun gv/ess-display-buffer ()
+(defun ghvi/ess-display-buffer ()
   "Displaying buffers with ESS."
   (setq display-buffer-alist
 	`(("^\\*R"
@@ -487,17 +487,17 @@ justify (as for `fill-paragraph')."
   :init
   (require 'ess-site)
   :mode ("\\.[rR]\\'" . R-mode)
-  :hook ((ess-mode . gv/ess-display-buffer)
+  :hook ((ess-mode . ghvi/ess-display-buffer)
 	 (ess-mode . rainbow-delimiters-mode))
   :commands R
   :bind (:map ess-r-mode-map
               (";" . ess-insert-assign)
               ("C-c =" . ess-insert-assign)
-              ("C-c :" . gv/insert-r-pipe)
+              ("C-c :" . ghvi/insert-r-pipe)
               :map inferior-ess-r-mode-map
               (";" . ess-insert-assign)
               ("C-c =" . ess-insert-assign)
-              ("C-c :" . gv/insert-r-pipe))
+              ("C-c :" . ghvi/insert-r-pipe))
   :config
   ;; Style
   (setq ess-style 'RStudio)
@@ -630,12 +630,12 @@ justify (as for `fill-paragraph')."
   (defun add-doi () "Adding a doi to .bib file"
 	(interactive)
 	(progn
-	  (defvar gv/mydoi "" "DOI variable")
-      (setq gv/mydoi (read-string "DOI "))
+	  (defvar ghvi/mydoi "" "DOI variable")
+      (setq ghvi/mydoi (read-string "DOI "))
       (find-file "~/Documents/Bibliography/biblio.bib")
       (goto-char (point-max))
 	  (forward-line -1)
-      (biblio-doi-insert-bibtex gv/mydoi))))
+      (biblio-doi-insert-bibtex ghvi/mydoi))))
 
 ;; citar
 ;; https://github.com/emacs-citar/citar#configuration
@@ -724,7 +724,7 @@ justify (as for `fill-paragraph')."
 ;; essh is for bash what ess is for R
 ;; https://www.emacswiki.org/emacs/essh.el
 ;; Load additional libraries
-(defun gv/essh-sh ()
+(defun ghvi/essh-sh ()
   "Define essh shorcut keys."
   (define-key sh-mode-map (kbd "C-<return>") 'pipe-region-to-shell)
   (define-key sh-mode-map "\C-c\C-b" 'pipe-buffer-to-shell)
@@ -735,7 +735,7 @@ justify (as for `fill-paragraph')."
 (use-package essh
   :load-path "essh/essh.el"
   :init
-  :hook (sh-mode . gv/essh-sh))
+  :hook (sh-mode . ghvi/essh-sh))
 
 ;; --------------------------------------
 ;; ORG-MODERN
@@ -830,7 +830,7 @@ justify (as for `fill-paragraph')."
   :ensure nil
   :init
   ;; Add a function to send a single line to the Python console
-  (defun gv/python-shell-send-line ()
+  (defun ghvi/python-shell-send-line ()
 	"Send a single line to the Python console."
 	(interactive)
 	(save-mark-and-excursion
@@ -842,7 +842,7 @@ justify (as for `fill-paragraph')."
        (region-end))))
   :bind (:map python-mode-map
 			  ("C-<return>" . python-shell-send-region)
-			  ("C-<backspace>" . gv/python-shell-send-line))
+			  ("C-<backspace>" . ghvi/python-shell-send-line))
   :config
   (setq python-indent-guess-indent-offset t)
   (setq python-indent-guess-indent-offset-verbose nil)
@@ -1006,18 +1006,18 @@ justify (as for `fill-paragraph')."
 
 ;; We also translate bold into beamer 'structure'
 ;; https://xgarrido.github.io/emacs-starter-kit/starter-kit-org.html
-(defun gv/beamer-bold (contents backend info)
+(defun ghvi/beamer-bold (contents backend info)
   (when (eq backend 'beamer)
     (replace-regexp-in-string "\\`\\\\[A-Za-z0-9]+" "\\\\structure" contents)))
-(defun gv/beamer-underline (contents backend info)
+(defun ghvi/beamer-underline (contents backend info)
   (when (eq backend 'beamer)
     (replace-regexp-in-string "\\`\\\\[A-Za-z0-9]+" "\\\\textbf" contents)))
-(defun gv/beamer-strike (contents backend info)
+(defun ghvi/beamer-strike (contents backend info)
   (when (eq backend 'beamer)
     (replace-regexp-in-string "\\`\\\\[A-Za-z0-9]+" "\\\\alert" contents)))
-(add-to-list 'org-export-filter-bold-functions 'gv/beamer-bold)
-(add-to-list 'org-export-filter-underline-functions 'gv/beamer-underline)
-(add-to-list 'org-export-filter-strike-through-functions 'gv/beamer-strike)
+(add-to-list 'org-export-filter-bold-functions 'ghvi/beamer-bold)
+(add-to-list 'org-export-filter-underline-functions 'ghvi/beamer-underline)
+(add-to-list 'org-export-filter-strike-through-functions 'ghvi/beamer-strike)
 
 
 ;; Export process from orgmode to LaTeX to PDF
@@ -1073,9 +1073,9 @@ justify (as for `fill-paragraph')."
 	  (list (expand-file-name "~/Documents/Bibliography/biblio.bib")))
 
 ;; CSL directory
-(defvar gv/csldir (expand-file-name "~/Documents/Bibliography/csl")
+(defvar ghvi/csldir (expand-file-name "~/Documents/Bibliography/csl")
   "CSL directory.")
-(setq org-cite-csl-styles-dir gv/csldir)
+(setq org-cite-csl-styles-dir ghvi/csldir)
 
 ;; Multilines bold
 (with-eval-after-load 'org
@@ -1123,7 +1123,7 @@ i.e. \\='(a . b)."
 
 ;; Markdown to org
 ;; http://yummymelon.com/devnull/converting-a-markdown-region-to-org-revisited.html
-(defun gv/markdown-to-org-region (start end)
+(defun ghvi/markdown-to-org-region (start end)
   "Convert Markdown formatted text in region (START, END) to Org.
 
 This command requires that pandoc (man page `pandoc(1)') be
@@ -1211,33 +1211,33 @@ installed."
 ;; --------------------------------------
 
 ;; Files
-(defvar gv/org-default-todos-file "~/kDrive/Notes/todos.org"
+(defvar ghvi/org-default-todos-file "~/kDrive/Notes/todos.org"
   "Default file for todos.")
-(defvar gv/org-default-events-file "~/kDrive/Notes/events.org"
+(defvar ghvi/org-default-events-file "~/kDrive/Notes/events.org"
   "Default file for events.")
 
 ;; org-capture-templates
 (setq org-capture-templates
       '(("t" "Task (work)" entry
-	 (file+headline gv/org-default-todos-file "Work tasks")
+	 (file+headline ghvi/org-default-todos-file "Work tasks")
 	 "*** TODO %?")
 	("T" "Task (perso)" entry
-	 (file+headline gv/org-default-todos-file "Personal tasks")
+	 (file+headline ghvi/org-default-todos-file "Personal tasks")
 	 "*** TODO %?")
 	("m" "Meeting (work)" entry
-	 (file+headline gv/org-default-events-file "Work meetings, TZ Nouméa")
+	 (file+headline ghvi/org-default-events-file "Work meetings, TZ Nouméa")
 	 "** %?\n%t")
 	("M" "Meeting (personal appointment)" entry
-	 (file+headline gv/org-default-events-file "Personal appointments, TZ Nouméa")
+	 (file+headline ghvi/org-default-events-file "Personal appointments, TZ Nouméa")
 	 "** %?\n%t")
 	("e" "Event (non professional event)" entry
-	 (file+headline gv/org-default-events-file "Other events")
+	 (file+headline ghvi/org-default-events-file "Other events")
 	 "** %?\n%t")
 	("n" "Note" entry
 	 (file+headline org-default-notes-file "Notes")
 	 "** %?\n%t" :empty-lines 1)
 	("A" "Answer email (perso)" entry
-	 (file+headline gv/org-default-todos-file "Personal tasks")
+	 (file+headline ghvi/org-default-todos-file "Personal tasks")
 	 "*** TODO %:fromname: %a %?")))
 
 ;; todo keywords
@@ -1247,22 +1247,22 @@ installed."
 ;; faces for specific TODO keywords
 (setq org-todo-keyword-faces
       '(("TODO" . org-todo)
-        ("STRT" . gv/org-inprogress-kwd)
-        ("WAIT" . gv/org-waiting-for-kwd)
-        ("SDAY" . gv/org-someday-kwd)
+        ("STRT" . ghvi/org-inprogress-kwd)
+        ("WAIT" . ghvi/org-waiting-for-kwd)
+        ("SDAY" . ghvi/org-someday-kwd)
         ("DONE" . org-done)
         ("CANX" . org-done)))
 
 ;; Org non-standard faces
-(defface gv/org-inprogress-kwd
+(defface ghvi/org-inprogress-kwd
   '((t (:weight bold :box (:line-width 1 :color "#D9D14A")
 		:foreground "#D9D14A" :background "#FCFCDC")))
   "Face used to display state STRT.")
-(defface gv/org-waiting-for-kwd
+(defface ghvi/org-waiting-for-kwd
   '((t (:weight bold :box (:line-width 1 :color "#89C58F")
 		:foreground "#89C58F" :background "#E2FEDE")))
   "Face used to display state WAIT.")
-(defface gv/org-someday-kwd
+(defface ghvi/org-someday-kwd
   '((t (:weight bold :box (:line-width 1 :color "#9EB6D4")
 		:foreground "#9EB6D4" :background "#E0EFFF")))
   "Face used to display state SDAY.")
