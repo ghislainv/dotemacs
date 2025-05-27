@@ -1410,6 +1410,7 @@ installed."
 
 (use-package denote
   :ensure t
+  :bind ("C-c d" . denote-open-or-create)
   :custom
   (denote-directory "/home/ghislain/kDrive/Notes")
   :config
