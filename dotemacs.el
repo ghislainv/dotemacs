@@ -1473,6 +1473,23 @@ installed."
   :config
   (load "org-player.el"))
 
+;; --------------------------
+;; whisper
+;; --------------------------
+
+;; Configure speech input
+(use-package whisper
+  :load-path "~/.config/emacs/whisper/"
+  :bind ("M-s-r" . whisper-run) ; s is Windows key
+  :init
+  (load "whisper.el")
+  :config
+  (setq whisper-install-directory "/home/ghislain/Applications/"
+	whisper-model "base"
+        whisper-language "en"
+        whisper-translate nil
+	whisper-use-threads (/ (num-processors) 2)))
+
 ;; -------------------------
 ;; org-ai
 ;; -------------------------
@@ -1495,21 +1512,18 @@ installed."
   (setq org-ai-image-default-quality 'hd)
   (setq org-ai-image-directory (expand-file-name "images/org-ai/" org-directory)))
 
-;; Setting up speech input / output
-(use-package whisper
-  :load-path "~/.config/emacs/whisper/"
-  :bind ("M-s-r" . whisper-run) ; s is Windows key
-  :init
-  (load "whisper.el")
-  :config
-  (setq whisper-install-directory "/home/ghislain/Applications/"
-	whisper-model "base"
-        whisper-language "en"
-        whisper-translate nil
-	whisper-use-threads (/ (num-processors) 2)))
+;; -------------------------
+;; greader
+;; -------------------------
 
+;; Used to read text. espeak-ng and mbrola voices must be installed.
+;; apt-get install espeak-ng "mbrola-fr*"
 (use-package greader
-  :ensure t)
+  :ensure t
+  :config
+  (setq greader-espeak-rate 142)
+  (setq greader-espeak-language "mb/mb-fr4")
+  (setq greader-espeak-executable-name "espeak-ng"))
 (require 'whisper)
 (require 'org-ai-talk)
 
