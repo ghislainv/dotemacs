@@ -26,7 +26,7 @@
 ;; --------------------------------------
 
 (defvar my-package-list)
-(setq my-package-list '(auctex
+(setq my-package-list '(;;auctex
 			better-defaults
 			citeproc
 			exec-path-from-shell
@@ -50,6 +50,8 @@
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/") t)
 (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/") t)
+;; Absolute value for package-user-dir
+(setq package-user-dir (concat user-emacs-directory "aaa-ghvi-packages/"))
 (package-initialize)
 
 ;; Fetch the list of packages available
@@ -65,9 +67,6 @@
 ;; (always install packages if not installed)
 (require 'use-package)
 (setq use-package-always-ensure 't)
-
-;; Absolute value for package-user-dir
-(setq package-user-dir (concat user-emacs-directory "elpa/"))
 
 ;; --------------------------------------
 ;; BASIC CUSTOMIZATION
@@ -222,7 +221,7 @@ justify (as for `fill-paragraph')."
 ;; https://github.com/munen/emacs.d/blob/master/configuration.org#mu4e
 
 (use-package mu4e
-  :load-path "/usr/share/emacs/site-lisp/elpa/mu4e-1.12.9/"
+  :load-path "/usr/share/emacs/site-lisp/elpa/mu4e-1.12.13/"
   :ensure nil
   :init
   (add-hook 'mu4e-headers-mode-hook (lambda () (display-line-numbers-mode 0)))
@@ -858,7 +857,8 @@ justify (as for `fill-paragraph')."
 (use-package pyvenv
   :ensure t
   :init
-  (setenv "WORKON_HOME" "~/venvs")
+  ;;(setenv "WORKON_HOME" "~/venvs")
+  (setenv "WORKON_HOME" "~/.pyenv/versions/miniforge3-latest/envs/")
   :config
   (pyvenv-mode 1))
 
@@ -887,7 +887,7 @@ justify (as for `fill-paragraph')."
 (add-to-list 'auto-mode-alist '("\\.\\(org\\|org_archive\\)$" . org-mode))
 
 ;; Default directories and files
-(setq org-directory "~/kDrive/Notes/")
+(setq org-directory "~/kDrive/Documents/Notes/")
 (setq org-default-notes-file (concat org-directory "/notes_work.org"))
 
 ;; Configure org-refile
@@ -903,8 +903,11 @@ justify (as for `fill-paragraph')."
 (global-set-key (kbd "C-c b") 'org-iswitchb)
 (global-set-key (kbd "C-c c") 'org-capture)
 (global-set-key (kbd "C-c S-t") 'org-babel-execute-subtree)
-(global-set-key (kbd "C-c o")
-		(lambda () (interactive) (find-file (concat org-directory "/notes_work.org"))))
+(defun ghvi/open-notes-work ()
+     "Open notes_work org file."
+     (interactive)
+     (find-file (concat org-directory "/notes_work.org")))
+(global-set-key (kbd "C-c o") 'ghvi/open-notes-work)
 
 ;; Settings
 (setq org-hide-leading-stars t
@@ -1171,10 +1174,10 @@ installed."
   :config
   (setq org-agenda-include-diary t) ;; See .config/emacs_ghvi/diary file
   (setq diary-show-holidays-flag nil) ;; US holidays in calendar-holidays variables
-  (setq org-agenda-files '("~/kDrive/Notes/notes_work.org"
-			   "~/kDrive/Notes/notes_perso.org"
-			   "~/kDrive/Notes/todos.org"
-			   "~/kDrive/Notes/events.org")))
+  (setq org-agenda-files '("~/kDrive/Documents/Notes/notes_work.org"
+			   "~/kDrive/Documents/Notes/notes_perso.org"
+			   "~/kDrive/Documents/Notes/todos.org"
+			   "~/kDrive/Documents/Notes/events.org")))
 
 ;; Casual calendar
 (use-package casual
@@ -1211,9 +1214,9 @@ installed."
 ;; --------------------------------------
 
 ;; Files
-(defvar ghvi/org-default-todos-file "~/kDrive/Notes/todos.org"
+(defvar ghvi/org-default-todos-file "~/kDrive/Documents/Notes/todos.org"
   "Default file for todos.")
-(defvar ghvi/org-default-events-file "~/kDrive/Notes/events.org"
+(defvar ghvi/org-default-events-file "~/kDrive/Documents/Notes/events.org"
   "Default file for events.")
 
 ;; org-capture-templates
@@ -1412,7 +1415,7 @@ installed."
   :ensure t
   :bind ("C-c d" . denote-open-or-create)
   :custom
-  (denote-directory "/home/ghislain/kDrive/Notes")
+  (denote-directory "/home/ghislain/kDrive/Documents/Notes")
   :config
   (setq denote-org-front-matter
   "#+title:      %s
@@ -1436,7 +1439,7 @@ installed."
   :ensure t
   :after plz
   :config
-  (setq gt-langs '(en es))
+  (setq gt-langs '(en fr))
   (setq gt-default-translator
 	(gt-translator
 	 :engines (gt-deepl-engine :key "7a3ff352-c4cb-4efe-9f71-94a992e5352b:fx")
@@ -1467,6 +1470,11 @@ installed."
 ;; --------------------------
 ;; org-player
 ;; --------------------------
+
+(use-package bongo
+  :load-path "~/.config/emacs/bongo"
+  :config
+  (load "bongo.el"))
 
 (use-package org-player
   :load-path "~/.config/emacs/org-player"
@@ -1526,6 +1534,14 @@ installed."
   (setq greader-espeak-executable-name "espeak-ng"))
 (require 'whisper)
 (require 'org-ai-talk)
+
+;; -------------------------
+;; YASnippet
+;; -------------------------
+
+(use-package yasnippet
+  :ensure t
+  :hook (org-mode-hook . yas-minor-mode))
 
 ;;; ----------------
 ;;; dotemacs.el ends here
