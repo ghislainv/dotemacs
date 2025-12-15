@@ -230,21 +230,100 @@ justify (as for `fill-paragraph')."
 	 ("C-c c" . mu4e-org-store-and-capture)
 	 :map mu4e-view-mode-map
 	 ("C-c c" . mu4e-org-store-and-capture))
+  :functions mu4e-message mu4e-message-field
   :config
   ;; Mail user agent
   (setq mail-user-agent 'mu4e-user-agent)
-  ;; SMTP settings:
-  (setq send-mail-function 'smtpmail-send-it)       ; should not be modified
-  (setq smtpmail-smtp-server "mail.infomaniak.com") ; host running SMTP server
-  (setq smtpmail-smtp-service 465)                  ; SMTP service port number
-  (setq smtpmail-stream-type 'ssl)                  ; type of SMTP connections to use
-  ;; Mail folders:
-  (setq mu4e-drafts-folder "/Drafts")
-  (setq mu4e-sent-folder   "/Sent")
-  (setq mu4e-trash-folder  "/Trash")
-  (setq mu4e-refile-folder "/Archives")
+  (setq send-mail-function 'smtpmail-send-it) ; should not be modified
+  ;; Signature
+  (defvar ghvi/signature
+    (concat
+     "-------------------------------------------------------------------\n"
+     "Ghislain VIEILLEDENT\n"
+     "Phone: +33.6.24.62.65.07 (French No.)\n"
+     "E-mail: ghislainv(at)mtloz(dot)fr\n"
+     "Web site: https://ghislainv.fr\n"
+     "-------------------------------------------------------------------\n")
+    "My email signature")
+  (defvar ghvi-cirad/signature
+    (concat
+     "-------------------------------------------------------------------\n"
+     "Ghislain VIEILLEDENT\n"
+     "Cirad, UMR AMAP, Montpellier, France\n"
+     "Phone: +33.6.24.62.65.07 (French No.)\n"
+     "E-mail: ghislain.vieilledent@cirad.fr\n"
+     "Research unit web site: https://amap.cirad.fr/\n"
+     "Academic web site: https://ecology.ghislainv.fr/\n"
+     "-------------------------------------------------------------------\n")
+    "My cirad signature")
+  ;; Contexts
+  (setq mu4e-contexts
+    (list
+     ;; Private context
+     (make-mu4e-context
+      :name "private"
+      :enter-func (lambda () (mu4e-message "Entering Private context"))
+      :leave-func (lambda () (mu4e-message "Leaving Private context"))
+      :match-func (lambda (msg)
+		    (when msg
+		      (string-prefix-p "/mtloz" (mu4e-message-field msg :maildir))))
+      :vars '((user-mail-address . "ghislainv@mtloz.fr")
+              (user-full-name    . "Ghislain Vieilledent")
+	      ;; SMTP settings
+              (smtpmail-smtp-server  . "mail.infomaniak.com") ; host running SMTP server
+              (smtpmail-smtp-service . 465)                   ; SMTP service port number
+              (smtpmail-stream-type  . ssl)                   ; type of SMTP connections to use
+	      ;; Mail folders
+              (mu4e-drafts-folder . "/mtloz/Drafts")
+              (mu4e-sent-folder   . "/mtloz/Sent")
+              (mu4e-trash-folder  . "/mtloz/Trash")
+	      (mu4e-refile-folder . "/mtloz/Archives")
+	      ;; Maildir shortcuts
+	      (mu4e-maildir-shortcuts . ((:maildir "/mtloz/INBOX" :name "INBOX" :key ?i)
+					 (:maildir "/mtloz/Drafts" :name "Drafts" :key ?d)
+					 (:maildir "/mtloz/Archives" :name "Archives" :key ?a)
+					 (:maildir "/mtloz/Promotions" :name "Promotions" :key ?p)
+					 (:maildir "/mtloz/Trash" :name "Trash" :key ?t)
+					 (:maildir "/mtloz/Sent" :name "Sent" :key ?s)))
+	      ;; Signature
+	      (message-signature . (symbol-value 'ghvi/signature))))
+     ;; Work context
+     (make-mu4e-context
+      :name "work"
+      :enter-func (lambda () (mu4e-message "Entering Work context"))
+      :leave-func (lambda () (mu4e-message "Leaving Work context"))
+      :match-func (lambda (msg)
+		    (when msg
+		      (string-prefix-p "/cirad" (mu4e-message-field msg :maildir))))
+      :vars '((user-mail-address . "ghislain.vieilledent@cirad.fr")
+              (user-full-name    . "Ghislain Vieilledent")
+	      ;; SMTP settings
+              (smtpmail-smtp-server  . "smtp.cirad.fr") ; host running SMTP server
+              (smtpmail-smtp-service . 465)             ; SMTP service port number
+              (smtpmail-stream-type  . ssl)             ; type of SMTP connections to use
+	      ;; Mail folders
+              (mu4e-drafts-folder . "/cirad/Drafts")
+              (mu4e-sent-folder   . "/cirad/Sent")
+              (mu4e-trash-folder  . "/cirad/Trash")
+	      (mu4e-refile-folder . "/cirad/Archives-tmp")
+	      ;; Maildir shortcuts
+	      (mu4e-maildir-shortcuts . ((:maildir "/cirad/INBOX" :name "INBOX" :key ?i)
+					 (:maildir "/cirad/Drafts" :name "Draft" :key ?d)
+					 (:maildir "/cirad/Archives-tmp" :name "Atmp" :key ?a)
+					 (:maildir "/cirad/Trash" :name "Trash" :key ?t)
+					 (:maildir "/cirad/Sent" :name "Sent" :key ?s)
+					 (:maildir "/cirad/Archives/2025" :name "A2025" :key ?A)
+					 (:maildir "/cirad/Archives/2024" :name "A2024" :key ?B)
+					 (:maildir "/cirad/Listes/listeamap" :name "listeamap" :key ?l)
+					 (:maildir "/cirad/Listes/amap-tous" :name "amap-tous" :key ?m)
+					 (:maildir "/cirad/Templates" :name "Templates" :key ?p)))
+	      ;; Signature
+	      (message-signature . (symbol-value 'ghvi-cirad/signature))))))
+
   ;; The command used to get your emails (adapt this line, see section 2.3):
-  (setq mu4e-get-mail-command "mbsync --config ~/.config/emacs/mu4e/.mbsyncrc mtloz")
+  (setq mu4e-get-mail-command "mbsync --config ~/.config/emacs/mu4e/.mbsyncrc -a") ; all
+  ;;(setq mu4e-get-mail-command "mbsync --config ~/.config/emacs/mu4e/.mbsyncrc mtloz") ; mtloz channel
+
   ;; Further customization:
   (setq mu4e-update-interval (* 5 60)             ; refresh email every 5 minutes
 	mu4e-headers-auto-update t                ; avoid to type `g' to update
@@ -258,7 +337,7 @@ justify (as for `fill-paragraph')."
   ;;(setq mu4e-index-cleanup nil    ; don't do a full cleanup check
   ;;	mu4e-index-lazy-check t)  ; don't consider up-to-date dirs
   ;; Date format
-  (setq mu4e-headers-date-format "%Y-%m-%d")
+  (setq mu4e-headers-date-format "%d-%m-%Y")
   (setq mu4e-headers-time-format "%H:%M")
   ;; Headers
   (setq mu4e-headers-fields
@@ -267,26 +346,7 @@ justify (as for `fill-paragraph')."
 		  (:mailing-list . 10)
 		  (:from-or-to . 22)
 		  (:subject)))
-  ;; Maildir shortcuts
-  (setq	mu4e-maildir-shortcuts
-		'((:maildir "/INBOX" :key ?i)
-		  (:maildir "/Drafts" :key ?d)
-		  (:maildir "/Archives" :key ?a)
-		  (:maildir "/Promotions" :key ?p)
-		  (:maildir "/Trash" :key ?t)
-		  (:maildir "/Sent" :key ?s)))
-  ;; Signature
-  (defvar ghvi/signature
-	(concat
-	 "-------------------------------------------------------------------\n"
-	 "Ghislain VIEILLEDENT\n"
-	 "Phone: +687.97.18.15 (New Caledonian No.)\n"
-	 "WhatsApp: +33.6.24.62.65.07 (French No.)\n"
-	 "E-mail: ghislainv(at)mtloz(dot)fr\n"
-	 "Web site: https://ghislainv.fr\n"
-	 "-------------------------------------------------------------------\n")
-	"My email signature")
-  (setq message-signature ghvi/signature)
+
   ;; Do not reply to yourself
   ;; A value of nil means exclude ‘user-mail-address’ only
   (setq message-dont-reply-to-names nil))
@@ -1228,10 +1288,10 @@ installed."
 	 (file+headline ghvi/org-default-todos-file "Personal tasks")
 	 "*** TODO %?")
 	("m" "Meeting (work)" entry
-	 (file+headline ghvi/org-default-events-file "Work meetings, TZ Nouméa")
+	 (file+headline ghvi/org-default-events-file "Work meetings, TZ Paris")
 	 "** %?\n%t")
 	("M" "Meeting (personal appointment)" entry
-	 (file+headline ghvi/org-default-events-file "Personal appointments, TZ Nouméa")
+	 (file+headline ghvi/org-default-events-file "Personal appointments, TZ Paris")
 	 "** %?\n%t")
 	("e" "Event (non professional event)" entry
 	 (file+headline ghvi/org-default-events-file "Other events")
