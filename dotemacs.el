@@ -312,11 +312,11 @@ justify (as for `fill-paragraph')."
 					 (:maildir "/cirad/Archives-tmp" :name "Atmp" :key ?a)
 					 (:maildir "/cirad/Trash" :name "Trash" :key ?t)
 					 (:maildir "/cirad/Sent" :name "Sent" :key ?s)
-					 (:maildir "/cirad/Archives/2025" :name "A2025" :key ?A)
-					 (:maildir "/cirad/Archives/2024" :name "A2024" :key ?B)
+					 (:maildir "/cirad/Templates" :name "Templates" :key ?p)
 					 (:maildir "/cirad/Listes/listeamap" :name "listeamap" :key ?l)
 					 (:maildir "/cirad/Listes/amap-tous" :name "amap-tous" :key ?m)
-					 (:maildir "/cirad/Templates" :name "Templates" :key ?p)))
+					 (:maildir "/cirad/Archives/2025" :name "A2025" :key ?A)
+					 (:maildir "/cirad/Archives/2024" :name "A2024" :key ?B)))
 	      ;; Signature
 	      (message-signature . (symbol-value 'ghvi-cirad/signature))))))
 
