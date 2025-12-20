@@ -29,7 +29,7 @@
 (setq my-package-list '(;;auctex
 			better-defaults
 			citeproc
-			exec-path-from-shell
+			;;exec-path-from-shell
 			flycheck
 			htmlize
 			jedi
@@ -43,7 +43,7 @@
 			py-autopep8
 			pylint
 			use-package
-			xterm-color
+			;;xterm-color
 			yaml-mode))
 
 (require 'package)
@@ -305,24 +305,23 @@ justify (as for `fill-paragraph')."
               (mu4e-drafts-folder . "/cirad/Drafts")
               (mu4e-sent-folder   . "/cirad/Sent")
               (mu4e-trash-folder  . "/cirad/Trash")
-	      (mu4e-refile-folder . "/cirad/Archives-tmp")
+	      (mu4e-refile-folder . "/cirad/Archives")
 	      ;; Maildir shortcuts
 	      (mu4e-maildir-shortcuts . ((:maildir "/cirad/INBOX" :name "INBOX" :key ?i)
 					 (:maildir "/cirad/Drafts" :name "Draft" :key ?d)
-					 (:maildir "/cirad/Archives-tmp" :name "Atmp" :key ?a)
+					 (:maildir "/cirad/Archives" :name "Archives" :key ?a)
 					 (:maildir "/cirad/Trash" :name "Trash" :key ?t)
 					 (:maildir "/cirad/Sent" :name "Sent" :key ?s)
 					 (:maildir "/cirad/Templates" :name "Templates" :key ?p)
 					 (:maildir "/cirad/Listes/listeamap" :name "listeamap" :key ?l)
 					 (:maildir "/cirad/Listes/amap-tous" :name "amap-tous" :key ?m)
-					 (:maildir "/cirad/Archives/2025" :name "A2025" :key ?A)
-					 (:maildir "/cirad/Archives/2024" :name "A2024" :key ?B)))
+					 (:maildir "/cirad/ArXives/2025" :name "A2025" :key ?A)
+					 (:maildir "/cirad/ArXives/2024" :name "A2024" :key ?B)))
 	      ;; Signature
 	      (message-signature . (symbol-value 'ghvi-cirad/signature))))))
 
   ;; The command used to get your emails (adapt this line, see section 2.3):
   (setq mu4e-get-mail-command "mbsync --config ~/.config/emacs/mu4e/.mbsyncrc -a") ; all
-  ;;(setq mu4e-get-mail-command "mbsync --config ~/.config/emacs/mu4e/.mbsyncrc mtloz") ; mtloz channel
 
   ;; Further customization:
   (setq mu4e-update-interval (* 5 60)             ; refresh email every 5 minutes
@@ -345,7 +344,7 @@ justify (as for `fill-paragraph')."
 		  (:flags . 6)
 		  (:mailing-list . 10)
 		  (:from-or-to . 22)
-		  (:subject)))
+		  (:subject . 90)))
 
   ;; Do not reply to yourself
   ;; A value of nil means exclude ‘user-mail-address’ only
@@ -365,9 +364,10 @@ justify (as for `fill-paragraph')."
 ;; -------------------------------------
 
 ;; Gestion des icônes par all-the-icons
-(use-package all-the-icons
+(use-package nerd-icons
   :ensure t
-  :if (display-graphic-p))
+  :custom
+  (nerd-icons-font-family "Symbols Nerd Font Mono"))
 
 ;; -------------------------------------
 ;; Dired
@@ -387,9 +387,9 @@ justify (as for `fill-paragraph')."
   ;; Human readable
   (setq dired-listing-switches "-alFh"))
 
-(use-package all-the-icons-dired
-    :hook (dired-mode . all-the-icons-dired-mode)
-    :config (setq all-the-icons-dired-monochrome nil))
+(use-package nerd-icons-dired
+  :ensure t
+  :hook (dired-mode . nerd-icons-dired-mode))
 
 ;; -------------------------------------
 ;; Disk usage
@@ -405,9 +405,9 @@ justify (as for `fill-paragraph')."
 ;; Using the ibuffer mode
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 
-(use-package all-the-icons-ibuffer
+(use-package nerd-icons-ibuffer
   :ensure t
-  :hook (ibuffer-mode . all-the-icons-ibuffer-mode))
+  :hook (ibuffer-mode . nerd-icons-ibuffer-mode))
 
 ;; -------------------------------------
 ;; elfeed
@@ -747,54 +747,44 @@ justify (as for `fill-paragraph')."
 ;; SHELL CONFIGURATION
 ;; -------------------------------------
 
-;; xterm-color
-;; https://github.com/atomontage/xterm-color
-(require 'xterm-color)
-(setq comint-output-filter-functions
-      (remove 'ansi-color-process-output comint-output-filter-functions))
-(add-hook 'shell-mode-hook
-          (lambda ()
-            ;; Disable font-locking in this buffer to improve performance
-            (font-lock-mode -1)
-            ;; Prevent font-locking from being re-enabled in this buffer
-            (make-local-variable 'font-lock-function)
-            (setq font-lock-function (lambda (_) nil))
-            (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter nil t)))
+;; ;; xterm-color
+;; ;; https://github.com/atomontage/xterm-color
+;; (require 'xterm-color)
+;; (setq comint-output-filter-functions
+;;       (remove 'ansi-color-process-output comint-output-filter-functions))
+;; (add-hook 'shell-mode-hook
+;;           (lambda ()
+;;             ;; Disable font-locking in this buffer to improve performance
+;;             (font-lock-mode -1)
+;;             ;; Prevent font-locking from being re-enabled in this buffer
+;;             (make-local-variable 'font-lock-function)
+;;             (setq font-lock-function (lambda (_) nil))
+;;             (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter nil t)))
 
-;; zsh with M-x shell
-(setq explicit-shell-file-name "/usr/bin/zsh")
-(setq shell-file-name "zsh")
-(defvar explicit-zsh-args)
-(setq explicit-zsh-args '("--login" "--interactive"))
-(defun zsh-shell-mode-setup ()
-  "Setup zsh shell mode."
-  (setq-local comint-process-echoes t))
-(add-hook 'shell-mode-hook #'zsh-shell-mode-setup)
+;; ;; Path from shell
+;; ;; https://github.com/purcell/exec-path-from-shell
+;; ;;(dolist (var '("WDPA_KEY"))
+;; ;;   (add-to-list 'exec-path-from-shell-variables var))
+;; ;; Remove "-i" from exec-path-from-shell-arguments for non-interactive shell
+;; (setq exec-path-from-shell-arguments '("-l"))
+;; (when (memq window-system '(mac ns x))
+;;   (exec-path-from-shell-initialize))
 
-;; Path from shell
-;; https://github.com/purcell/exec-path-from-shell
-;;(dolist (var '("WDPA_KEY"))
-;;   (add-to-list 'exec-path-from-shell-variables var))
-;; Remove "-i" from exec-path-from-shell-arguments for non-interactive shell
-(setq exec-path-from-shell-arguments '("-l"))
-(when (memq window-system '(mac ns x))
-  (exec-path-from-shell-initialize))
-
-;; essh is for bash what ess is for R
-;; https://www.emacswiki.org/emacs/essh.el
-;; Load additional libraries
-(defun ghvi/essh-sh ()
-  "Define essh shorcut keys."
-  (define-key sh-mode-map (kbd "C-<return>") 'pipe-region-to-shell)
-  (define-key sh-mode-map "\C-c\C-b" 'pipe-buffer-to-shell)
-  (define-key sh-mode-map "\C-c\C-j" 'pipe-line-to-shell)
-  (define-key sh-mode-map (kbd "C-<return>") 'pipe-line-to-shell-and-step)
-  (define-key sh-mode-map "\C-c\C-f" 'pipe-function-to-shell)
-  (define-key sh-mode-map "\C-c\C-d" 'shell-cd-current-directory))
-(use-package essh
-  :load-path "essh/essh.el"
-  :init
-  :hook (sh-mode . ghvi/essh-sh))
+;; ;; essh is for bash what ess is for R
+;; ;; https://www.emacswiki.org/emacs/essh.el
+;; ;; Load additional libraries
+;; (defun ghvi/essh-sh ()
+;;   "Define essh shorcut keys."
+;;   (define-key sh-mode-map (kbd "C-<return>") 'pipe-region-to-shell)
+;;   (define-key sh-mode-map "\C-c\C-b" 'pipe-buffer-to-shell)
+;;   (define-key sh-mode-map "\C-c\C-j" 'pipe-line-to-shell)
+;;   (define-key sh-mode-map (kbd "C-<return>") 'pipe-line-to-shell-and-step)
+;;   (define-key sh-mode-map "\C-c\C-f" 'pipe-function-to-shell)
+;;   (define-key sh-mode-map "\C-c\C-d" 'shell-cd-current-directory))
+;; (use-package essh
+;;   :load-path "essh/essh.el"
+;;   :init
+;;   :hook (sh-mode . ghvi/essh-sh))
 
 ;; --------------------------------------
 ;; ORG-MODERN
@@ -825,15 +815,15 @@ justify (as for `fill-paragraph')."
   :custom
   (tramp-default-method "ssh")
   (tramp-terminal-type "tramp")
+  (tramp-default-remote-shell "/usr/bin/bash")
   :config
   ;; Open file with sudo
   (defun sudo ()
     "Use TRAMP to `sudo' the current buffer."
     (interactive)
-    (when buffer-file-name
-      (find-alternate-file
-       (concat "/sudo:root@localhost:"
-			   buffer-file-name)))))
+    (let ((filep (buffer-file-name)))
+      (if filep (find-file (concat "/sudo::" filep))
+	(message "Current buffer does not have an associated file.")))))
 
 ;; --------------------------------------
 ;; ELPY
@@ -1340,12 +1330,12 @@ installed."
   :init
   (marginalia-mode))
 
-(use-package all-the-icons-completion
+(use-package nerd-icons-completion
   :ensure t
-  :after (marginalia all-the-icons)
-  :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
-  :init
-  (all-the-icons-completion-mode))
+  :after (marginalia nerd-icons)
+  :hook (marginalia-mode . nerd-icons-completion-marginalia-setup)
+  :config
+  (nerd-icons-completion-mode))
 
 ;; Enable vertico
 (use-package vertico
