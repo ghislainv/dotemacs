@@ -1,4 +1,4 @@
-;;; package --- init.el --- Emacs configuration--------------------------------
+;;; init.el --- Emacs configuration -*- lexical-binding: t; -*-
 ;;; Commentary:
 ;;; Ghislain Vieilledent <ghislain.vieilledent@cirad.fr> / <ghislainv@gmail.com>
 ;;; Code:
@@ -342,9 +342,10 @@ justify (as for `fill-paragraph')."
   (setq mu4e-headers-fields
 		'((:human-date . 12)
 		  (:flags . 6)
-		  (:mailing-list . 10)
+		  (:mailing-list . 8)
 		  (:from-or-to . 22)
-		  (:subject . 90)))
+		  (:subject . 85)
+		  (:labels . 8)))
 
   ;; Do not reply to yourself
   ;; A value of nil means exclude ‘user-mail-address’ only
@@ -812,18 +813,46 @@ justify (as for `fill-paragraph')."
 
 (use-package tramp
   :ensure nil
+  :defines (tramp-use-scp-direct-remote-copying tramp-copy-size-limit)
   :custom
   (tramp-default-method "ssh")
   (tramp-terminal-type "tramp")
   (tramp-default-remote-shell "/usr/bin/bash")
   :config
+  
   ;; Open file with sudo
   (defun sudo ()
     "Use TRAMP to `sudo' the current buffer."
     (interactive)
     (let ((filep (buffer-file-name)))
       (if filep (find-file (concat "/sudo::" filep))
-	(message "Current buffer does not have an associated file.")))))
+	(message "Current buffer does not have an associated file."))))
+  
+  ;; Speed up Tramp
+  ;; https://coredumped.dev/2025/06/18/making-tramp-go-brrrr./
+  (setq remote-file-name-inhibit-locks t
+	tramp-use-scp-direct-remote-copying t
+	remote-file-name-inhibit-auto-save-visited t)
+  
+  (setq remote-file-name-inhibit-cache nil)
+  
+  (setq tramp-copy-size-limit (* 1024 1024) ;; 1MB
+	tramp-verbose 2)
+  
+  (setq vc-ignore-dir-regexp
+	(format "%s\\|%s"
+                vc-ignore-dir-regexp
+                tramp-file-name-regexp))
+  
+  (connection-local-set-profile-variables
+   'remote-direct-async-process
+   '((tramp-direct-async-process . t)))
+
+  (connection-local-set-profiles
+   '(:application tramp :protocol "scp")
+   'remote-direct-async-process)
+
+  (setq magit-tramp-pipe-stty-settings 'pty))
 
 ;; --------------------------------------
 ;; ELPY
@@ -1227,7 +1256,10 @@ installed."
   (setq org-agenda-files '("~/kDrive/Documents/Notes/notes_work.org"
 			   "~/kDrive/Documents/Notes/notes_perso.org"
 			   "~/kDrive/Documents/Notes/todos.org"
-			   "~/kDrive/Documents/Notes/events.org")))
+			   "~/kDrive/Documents/Notes/events.org"))
+  (setq org-agenda-custom-commands
+	'(("w" tags-todo "+work")
+	  ("p" tags-todo "+perso"))))
 
 ;; Casual calendar
 (use-package casual
@@ -1511,8 +1543,9 @@ installed."
 
 ;; Latitude and longitude for sunrise and sunset
 ;; M-x sunrise-sunset
-(setq calendar-latitude 43.63) ;; -22.28
-(setq calendar-longitude 3.86) ;; 166.46
+(require 'solar)
+(setq calendar-latitude 43.62505)
+(setq calendar-longitude 3.862038)
 (setq calendar-location-name "Montpellier, France")
 ;; Weeks start on Monday
 (setq calendar-week-start-day 1)
@@ -1592,6 +1625,41 @@ installed."
 (use-package yasnippet
   :ensure t
   :hook (org-mode-hook . yas-minor-mode))
+
+;; -------------------------
+;; Weather
+;; -------------------------
+
+(use-package sparkweather
+  :ensure t
+  :defines sparkweather-time-windows
+  :config
+  (setq sparkweather-add-footer t
+	sparkweather-hide-footer nil)
+  (setq sparkweather-time-windows
+    '(("BREAKFAST" 7 8 success)
+      ("LUNCH" 13 14 success)
+      ("COMMUTE" 17 18 warning))))
+
+;; ---------------------------------
+;; Org-mime for sending HTML emails
+;; ---------------------------------
+
+(use-package org-mime
+  :ensure t
+  :config
+  ;; Text between # is in red
+  (add-hook 'org-mime-html-hook
+          (lambda ()
+            (while (re-search-forward "#\\([^#]*\\)#" nil t)
+              (replace-match "<span style=\"color:red\">\\1</span>"))))
+  ;; Key bindings
+  (add-hook 'message-mode-hook
+          (lambda ()
+            (local-set-key (kbd "C-c M-h") 'org-mime-htmlize)))
+  (add-hook 'message-mode-hook
+          (lambda ()
+            (local-set-key (kbd "C-c M-o") 'org-mime-edit-mail-in-org-mode))))
 
 ;;; ----------------
 ;;; dotemacs.el ends here
