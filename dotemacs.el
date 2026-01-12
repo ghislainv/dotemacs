@@ -1517,9 +1517,10 @@ installed."
 (use-package plz
   :ensure t)
 
-(use-package go-translate
+(use-package gt
   :ensure t
   :after plz
+  :functions gt-translator gt-deepl-engine
   :config
   (setq gt-langs '(en fr))
   (setq gt-default-translator
