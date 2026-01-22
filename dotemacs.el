@@ -223,18 +223,28 @@ justify (as for `fill-paragraph')."
 (use-package mu4e
   :load-path "/usr/share/emacs/site-lisp/elpa/mu4e-1.12.13/"
   :ensure nil
+  :functions
+  mu4e-mark-execute-all
   :init
   (add-hook 'mu4e-headers-mode-hook (lambda () (display-line-numbers-mode 0)))
+  ;; Execute without confirmation
+  (defun ghvi/mu4e-execute-no-confirm ()
+	"Execute all without confirmation."
+	(interactive)
+	(mu4e-mark-execute-all 'no-confirm))
   :bind (("C-c m" . mu4e)
 	 :map mu4e-headers-mode-map
 	 ("C-c c" . mu4e-org-store-and-capture)
+	 ("x" . ghvi/mu4e-execute-no-confirm)
 	 :map mu4e-view-mode-map
-	 ("C-c c" . mu4e-org-store-and-capture))
+	 ("C-c c" . mu4e-org-store-and-capture)
+	 ("x" . ghvi/mu4e-execute-no-confirm))
   :functions mu4e-message mu4e-message-field
   :config
   ;; Mail user agent
   (setq mail-user-agent 'mu4e-user-agent)
   (setq send-mail-function 'smtpmail-send-it) ; should not be modified
+  (setq mu4e-attachment-dir "~/Mails/attachments/")
   ;; Signature
   (defvar ghvi/signature
     (concat
@@ -386,7 +396,9 @@ justify (as for `fill-paragraph')."
   ;; Define external image viewer/editor
   (setq image-dired-external-viewer "/usr/bin/gimp")
   ;; Human readable
-  (setq dired-listing-switches "-alFh"))
+  (setq dired-listing-switches "-alFh")
+  ;; Casula-dired
+  (keymap-set dired-mode-map "C-o" #'casual-dired-tmenu))
 
 (use-package nerd-icons-dired
   :ensure t
@@ -1043,14 +1055,16 @@ justify (as for `fill-paragraph')."
                ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
                ("\\paragraph{%s}" . "\\paragraph*{%s}")
                ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
-;; koma article (more modern design than the standard LaTeX classes)
+;; myreport
 (add-to-list 'org-latex-classes
-             '("koma-article" "\\documentclass{scrartcl}"
-               ("\\section{%s}" . "\\section*{%s}")
-               ("\\subsection{%s}" . "\\subsection*{%s}")
-               ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
-               ("\\paragraph{%s}" . "\\paragraph*{%s}")
-               ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+			 '("ghvi/report" "\\documentclass{report}"
+			   ;; ("\\part{%s}" . "\\part*{%s}")
+			   ("\\chapter{%s}" . "\\chapter*{%s}")
+			   ("\\section{%s}" . "\\section*{%s}")
+			   ("\\subsection{%s}" . "\\subsection*{%s}")
+			   ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+			   ("\\paragraph{%s}" . "\\paragraph*{%s}")
+			   ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
 ;; koma article (more modern design than the standard LaTeX classes)
 (add-to-list 'org-latex-classes
              '("koma-article" "\\documentclass{scrartcl}"
@@ -1081,10 +1095,10 @@ justify (as for `fill-paragraph')."
   :ensure nil
   :config
   (add-to-list 'org-latex-classes
-	       '("beamer" "\\documentclass{beamer}"
-		 ("\\section{%s}" . "\\section*{%s}")
-		 ("\\subsection{%s}" . "\\subsection*{%s}")
-		 ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))))
+			   '("beamer" "\\documentclass{beamer}"
+				 ("\\section{%s}" . "\\section*{%s}")
+				 ("\\subsection{%s}" . "\\subsection*{%s}")
+				 ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))))
 
 ;; We also translate bold into beamer 'structure'
 ;; https://xgarrido.github.io/emacs-starter-kit/starter-kit-org.html
@@ -1448,7 +1462,7 @@ installed."
 ;; `grep-mode' buffer.
 (use-package embark
   :ensure t
-  :bind (("C-." . embark-act)
+  :bind (("C-;" . embark-act)
          :map minibuffer-local-map
          ("C-c C-c" . embark-collect)
          ("C-c C-e" . embark-export)))
