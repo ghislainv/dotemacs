@@ -1058,7 +1058,6 @@ justify (as for `fill-paragraph')."
 ;; myreport
 (add-to-list 'org-latex-classes
 			 '("ghvi/report" "\\documentclass{report}"
-			   ;; ("\\part{%s}" . "\\part*{%s}")
 			   ("\\chapter{%s}" . "\\chapter*{%s}")
 			   ("\\section{%s}" . "\\section*{%s}")
 			   ("\\subsection{%s}" . "\\subsection*{%s}")
@@ -1377,11 +1376,10 @@ installed."
   (marginalia-mode))
 
 (use-package nerd-icons-completion
-  :ensure t
-  :after (marginalia nerd-icons)
-  :hook (marginalia-mode . nerd-icons-completion-marginalia-setup)
+  :after marginalia
   :config
-  (nerd-icons-completion-mode))
+  (nerd-icons-completion-mode)
+  (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
 
 ;; Enable vertico
 (use-package vertico
