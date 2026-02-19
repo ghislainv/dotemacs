@@ -227,6 +227,7 @@ justify (as for `fill-paragraph')."
   mu4e-mark-execute-all
   :init
   (add-hook 'mu4e-headers-mode-hook (lambda () (display-line-numbers-mode 0)))
+  (add-hook 'mu4e-compose-mode-hook #'(lambda () (auto-save-mode -1))) ;; To avoid draft accumulation
   ;; Execute without confirmation
   (defun ghvi/mu4e-execute-no-confirm ()
 	"Execute all without confirmation."
@@ -334,13 +335,13 @@ justify (as for `fill-paragraph')."
   (setq mu4e-get-mail-command "mbsync --config ~/.config/emacs/mu4e/.mbsyncrc -a") ; all
 
   ;; Further customization:
-  (setq mu4e-update-interval (* 5 60)             ; refresh email every 5 minutes
+  (setq mu4e-update-interval (* 5 60)         ; refresh email every 5 minutes
 	mu4e-headers-auto-update t                ; avoid to type `g' to update
 	mu4e-use-fancy-chars nil                  ; allow fancy icons for mail threads
 	mu4e-search-include-related nil           ; Do not include related messages in headers
 	mu4e-search-threads nil                   ; Do not show threads
 	mu4e-change-filenames-when-moving t       ; This is set to 't' to avoid mail syncing issues when using mbsync
-        mu4e-trash-without-flag t)                ; Trash moves message but does not set flag T
+    mu4e-trash-without-flag t)                ; Trash moves message but does not set flag T
   
   ;; Faster reindexing (not with mtloz)
   ;;(setq mu4e-index-cleanup nil    ; don't do a full cleanup check
@@ -1001,13 +1002,6 @@ justify (as for `fill-paragraph')."
 (global-set-key (kbd "C-c o") 'ghvi/open-notes-work)
 
 ;; Settings
-(setq org-hide-leading-stars t
-      org-startup-indented t)
-;;(setq org-alphabetical-lists t)
-(setq org-hide-emphasis-markers t) ;; to hide the *,=, or / markers
-(setq org-pretty-entities t)       ;; to have \alpha, \to and others display as utf8 http://orgmode.org/manual/Special-symbols.html
-(setq org-src-fontify-natively t)  ;; you want this to activate coloring in blocks
-(setq org-fontify-whole-heading-line t) ;; Fontify the whole line for headings (with a background color).
 (setq org-src-tab-acts-natively t) ;; you want this to have completion in blocks
 (setq org-src-preserve-indentation t)
 (setq org-export-with-smart-quotes t)
@@ -1016,6 +1010,16 @@ justify (as for `fill-paragraph')."
 (setq org-image-actual-width 600)
 (setq org-use-sub-superscripts "{}")
 
+;; Fontify (put some options to nil to accelerate fontification)
+(setq org-hide-leading-stars t
+      org-startup-indented t)
+;;(setq org-alphabetical-lists t)
+(setq org-hide-emphasis-markers nil) ;; to hide the *,=, or / markers
+(setq org-pretty-entities nil)       ;; to have \alpha, \to and others display as utf8 http://orgmode.org/manual/Special-symbols.html
+(setq org-src-fontify-natively t)  ;; you want this to activate coloring in blocks
+(setq org-highlight-latex-and-related nil)
+(setq org-fontify-whole-heading-line t) ;; Fontify the whole line for headings (with a background color).
+
 ;; The org-appear package helps by displaying the markers while the cursor is on a rich text word.
 (use-package org-appear
   :after org
@@ -1023,6 +1027,7 @@ justify (as for `fill-paragraph')."
   :custom
   (org-appear-autolinks t)
   (org-appear-autoemphasis t)
+  (org-appear-autosubmarkers t)
   :hook
   (org-mode . org-appear-mode))
 
@@ -1228,6 +1233,12 @@ installed."
    start end
    "pandoc -f markdown -t org --wrap=preserve" t t))
 
+;; Execute make in org-mode
+(defun ghvi/shell-command-make ()
+  "Execute make."
+  (interactive)
+  (shell-command "make"))
+(global-set-key (kbd "C-c k") 'ghvi/shell-command-make)
 
 ;; --------------------------------------
 ;; KOMA LETTER
@@ -1531,14 +1542,23 @@ installed."
 
 (use-package gt
   :ensure t
-  :after plz
-  :functions gt-translator gt-deepl-engine
+  :after plz pdd
+  :functions gt-translator gt-taker gt-deepl-engine gt-insert-render
   :config
+  (setq gt-http-backend (pdd-curl-backend))
   (setq gt-langs '(en fr))
   (setq gt-default-translator
-	(gt-translator
-	 :engines (gt-deepl-engine :key "7a3ff352-c4cb-4efe-9f71-94a992e5352b:fx")
-	 :render (gt-insert-render :type 'replace))))
+		(gt-translator
+		 :taker (gt-taker :pick nil :prompt t)
+		 :engines (gt-deepl-engine :key "7a3ff352-c4cb-4efe-9f71-94a992e5352b:fx")
+		 :render (gt-insert-render))))
+
+  ;; (require 'gt)
+  ;; (setq gt-default-translator
+  ;;      (gt-translator
+  ;;       :taker (gt-taker :langs '(en zh))
+  ;;       :engines (list (gt-google-engine) (gt-bing-engine))
+  ;;       :render (gt-buffer-render)))
 
 ;; --------------------------
 ;; Ebooks
