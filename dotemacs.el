@@ -29,8 +29,6 @@
 (setq my-package-list '(;;auctex
 			better-defaults
 			citeproc
-			;;exec-path-from-shell
-			flycheck
 			htmlize
 			jedi
 			olivetti
@@ -67,6 +65,9 @@
 ;; (always install packages if not installed)
 (require 'use-package)
 (setq use-package-always-ensure 't)
+
+;; Mise à jour des paquets intégrés
+(setq package-install-upgrade-built-in t)
 
 ;; --------------------------------------
 ;; BASIC CUSTOMIZATION
@@ -129,9 +130,6 @@
      nil 'fullscreen
      (when (not (frame-parameter nil 'fullscreen)) 'fullboth))))
 (global-set-key [f6] 'toggle-fullscreen)
-
-;; Permanently enable syntax checking with Flycheck
-(add-hook 'after-init-hook #'global-flycheck-mode)
 
 ;; Unfill paragraph
 ;; Stefan Monnier <foo at acm.org>. It is the opposite of fill-paragraph
@@ -233,6 +231,17 @@ justify (as for `fill-paragraph')."
 	"Execute all without confirmation."
 	(interactive)
 	(mu4e-mark-execute-all 'no-confirm))
+  ;; Confirmation before sending mail
+  (defun ghvi/mu4e-confirm-send ()
+	"Demande confirmation avant l'envoi."
+	(let* ((to (or (message-fetch-field "To") "(aucun destinataire)"))
+           (subject (or (message-fetch-field "Subject") "(sans objet)")))
+      (unless (y-or-n-p
+               (format "De   : %s\nÀ    : %s\nObjet: %s\nEnvoyer ce message ?"
+                       user-mail-address to subject))
+		(error "Envoi annulé"))))
+  :hook
+  (message-send-hook . ghvi/mu4e-confirm-send)
   :bind (("C-c m" . mu4e)
 	 :map mu4e-headers-mode-map
 	 ("C-c c" . mu4e-org-store-and-capture)
@@ -244,6 +253,7 @@ justify (as for `fill-paragraph')."
   :config
   ;; Mail user agent
   (setq mail-user-agent 'mu4e-user-agent)
+  (setq message-kill-buffer-on-exit t) ; close buffer after sending message
   (setq send-mail-function 'smtpmail-send-it) ; should not be modified
   (setq mu4e-attachment-dir "~/Mails/attachments/")
   ;; Signature
@@ -639,19 +649,31 @@ justify (as for `fill-paragraph')."
   (unless (file-exists-p ispell-personal-dictionary)
     (write-region "" nil ispell-personal-dictionary nil 0)))
 
+;; -------------------------------------
+;; flycheck
+;; -------------------------------------
+
+(use-package flycheck
+  :ensure t
+  :init (global-flycheck-mode 1)
+  :custom
+  (flycheck-disabled-checkers '(org-lint))
+  :config
+  (setq flycheck-checker-error-threshold 1000))
+
 ;; Correction grammaticale (pour le français)
 ;; https://github.com/milouse/flycheck-grammalecte
 (use-package flycheck-grammalecte
   :ensure t
   :after flycheck
-  :hook (fountain-mode . flycheck-mode)
+  :demand nil
+  :hook (org-mode . flycheck-mode)
   :init
   (setq flycheck-grammalecte-report-apos nil
         flycheck-grammalecte-report-esp nil
         flycheck-grammalecte-report-nbsp nil)
   :config
-  (add-to-list 'flycheck-grammalecte-enabled-modes 'fountain-mode)
-  (grammalecte-download-grammalecte)
+  (add-to-list 'flycheck-grammalecte-enabled-modes 'org-mode)
   (flycheck-grammalecte-setup))
 
 ;; -------------------------------------
@@ -775,14 +797,17 @@ justify (as for `fill-paragraph')."
 ;;             (setq font-lock-function (lambda (_) nil))
 ;;             (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter nil t)))
 
-;; ;; Path from shell
-;; ;; https://github.com/purcell/exec-path-from-shell
-;; ;;(dolist (var '("WDPA_KEY"))
-;; ;;   (add-to-list 'exec-path-from-shell-variables var))
-;; ;; Remove "-i" from exec-path-from-shell-arguments for non-interactive shell
-;; (setq exec-path-from-shell-arguments '("-l"))
-;; (when (memq window-system '(mac ns x))
-;;   (exec-path-from-shell-initialize))
+;; Path from shell
+;; https://github.com/purcell/exec-path-from-shell
+;;(dolist (var '("WDPA_KEY"))
+;;   (add-to-list 'exec-path-from-shell-variables var))
+;; Remove "-i" from exec-path-from-shell-arguments for non-interactive shell
+(use-package exec-path-from-shell
+  :ensure t
+  :config
+  (setq exec-path-from-shell-arguments '("-l"))
+  (when (memq window-system '(mac ns x))
+	(exec-path-from-shell-initialize)))
 
 ;; ;; essh is for bash what ess is for R
 ;; ;; https://www.emacswiki.org/emacs/essh.el
@@ -949,8 +974,8 @@ justify (as for `fill-paragraph')."
 (use-package pyvenv
   :ensure t
   :init
-  ;;(setenv "WORKON_HOME" "~/venvs")
-  (setenv "WORKON_HOME" "~/.pyenv/versions/miniforge3-latest/envs/")
+  (setenv "WORKON_HOME" "~/venvs")
+  ;;(setenv "WORKON_HOME" "~/.pyenv/versions/miniforge3-latest/envs/")
   :config
   (pyvenv-mode 1))
 
@@ -1060,6 +1085,10 @@ justify (as for `fill-paragraph')."
                ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
                ("\\paragraph{%s}" . "\\paragraph*{%s}")
                ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+;; article with only subsections
+(add-to-list 'org-latex-classes
+             '("ghvi/article" "\\documentclass{article}"
+               ("\\section{%s}" . "\\subsection*{%s}")))
 ;; myreport
 (add-to-list 'org-latex-classes
 			 '("ghvi/report" "\\documentclass{report}"
@@ -1122,6 +1151,8 @@ justify (as for `fill-paragraph')."
 
 ;; Export process from orgmode to LaTeX to PDF
 (setq org-latex-pdf-process '("texi2dvi --pdf --clean --verbose --batch %f"))
+;; (setq org-latex-pdf-process '("lualatex -pdf -shell-escape -interaction=nonstopmode %f"
+;; 							  "lualatex -pdf -shell-escape -interaction=nonstopmode %f"))
 
 ;; Export to MS-Word
 ;; Need to have LibreOffice on your computer
@@ -1516,9 +1547,23 @@ installed."
 ;;; Denote
 ;;; -------------------------
 
+;; See: https://protesilaos.com/codelog/2024-07-23-emacs-use-package-essentials/
+
 (use-package denote
   :ensure t
-  :bind ("C-c d" . denote-open-or-create)
+  :bind
+  ( :map global-map
+	("C-c n n" . denote)
+	("C-c n r" . denote-rename-file)
+	("C-c n o" . denote-open-or-create)
+		
+	:map text-mode-map
+	("C-c n i" . denote-link) ; "insert" mnemonic
+	("C-c n I" . denote-add-links)
+
+	:map dired-mode-map
+	("C-c C-d C-i" . denote-link-dired-marked-notes)
+	("C-c C-d C-r" . denote-dired-rename-marked-files))
   :custom
   (denote-directory "/home/ghislain/kDrive/Documents/Notes")
   :config
@@ -1546,7 +1591,8 @@ installed."
   :functions gt-translator gt-taker gt-deepl-engine gt-insert-render
   :config
   (setq gt-http-backend (pdd-curl-backend))
-  (setq gt-langs '(en fr))
+  (setq gt-langs '(fr es))
+  ;; (setq gt-langs '(en fr))
   (setq gt-default-translator
 		(gt-translator
 		 :taker (gt-taker :pick nil :prompt t)
@@ -1694,5 +1740,118 @@ installed."
           (lambda ()
             (local-set-key (kbd "C-c M-o") 'org-mime-edit-mail-in-org-mode))))
 
+;; ---------------------------------
+;; EMMS
+;; ---------------------------------
+
+(use-package emms
+  :ensure t
+  :config
+  ;; Charge une configuration par défaut (plus simple que de tout charger à la main)
+  (emms-all)
+  (emms-default-players)
+
+  ;; Définissez votre répertoire musical ici
+  (setq emms-source-file-default-directory "~/Musique/")
+
+  ;; Affichage du titre dans la mode-line
+  (emms-mode-line 1)
+  (emms-playing-time 1)
+
+  ;; Optionnel : Utiliser l'affichage "playlist" plus moderne
+  (setq emms-playlist-buffer-name "*Music*")
+  
+  ;; Définition de votre liste de stations personnalisée
+  (defvar ghvi/somafm-channels
+    '((*track* (type . url) (name . "https://somafm.com/synphaera.pls"))
+      (*track* (type . url) (name . "https://somafm.com/gsclassic.pls"))
+      (*track* (type . url) (name . "https://somafm.com/sonicuniverse.pls"))
+      (*track* (type . url) (name . "https://somafm.com/groovesalad.pls")))
+	"My somafm channels")
+
+  ;; Fonction pour charger votre liste SomaFM dans une playlist EMMS
+  (defun ghvi/emms-load-somafm ()
+    "Charge les stations SomaFM définies dans ghvi/somafm-channels."
+    (interactive)
+    (with-current-buffer "*Music*"
+      (dolist (track ghvi/somafm-channels)
+        (emms-add-url (cdr (assoc 'name (cdr track))))))
+    (message "Stations SomaFM ajoutées !"))
+  
+  :bind
+  ;; Raccourcis pratiques pour piloter la musique partout dans Emacs
+  (("C-c e s" . emms-stop)
+   ("C-c e b" . emms-pause) ; 'b' comme Break
+   ("C-c e n" . emms-next)
+   ("C-c e p" . emms-previous)
+   ("C-c e r" . ghvi/emms-load-somafm) ; 'r' comme Radio
+   ("C-c e e" . emms-smart-browse))) ; Un navigateur de bibliothèque sympa)
+
+;; -------------------------------------------
+;; Use GNOME Papers application to open a pdf
+;; Voir fichier ~/.mailcap avec application/pdf; papers %s
+;; ------------------------------------------
+
+;; ---------------------------------
+;; gptel
+;; ---------------------------------
+
+(use-package gptel
+  :ensure t
+  :functions gptel-api-key-from-auth-source
+  :config
+
+  ;; --- Clé API (méthode sécurisée via ~/.authinfo) ----------
+  ;; Ajoutez cette ligne dans ~/.authinfo :
+  ;; machine api.anthropic.com login apikey password VOTRE_CLÉ
+  ;;(setq gptel-api-key (getenv "OPENAI_API_KEY"))
+  (setq gptel-api-key #'gptel-api-key-from-auth-source)
+  
+  ;; --- Backend par défaut : Claude (Anthropic) --------------
+  (setq gptel-backend
+        (gptel-make-anthropic "Claude"
+          :stream t
+          :key gptel-api-key))
+  (setq gptel-model 'claude-sonnet-4-6)  ; modèle par défaut
+  
+  ;; --- Backends alternatifs (décommentez si besoin) ---------
+
+  ;; Ollama en local
+  (gptel-make-ollama "Ollama"
+    :host "localhost:11434"
+    :models '("llama3:8b"
+              "mistral"
+              "deepseek-coder:6.7b"))
+  
+  ;; OpenAI / ChatGPT
+  (gptel-make-openai "ChatGPT"
+	:stream t
+	:key gptel-api-key
+	:models '(gpt-4o))
+
+  ;; --- Comportement général ---------------------------------
+  (setq gptel-default-mode 'org-mode)   ; réponses en Org par défaut
+  (setq gptel-use-curl t)               ; curl pour de meilleures perfs
+  (setq gptel-use-tools t)              ; activer le tool-use (agents)
+
+  ;; --- Directive système ------------------------------------
+  (setq gptel-directives
+        '((default
+           . "Tu es un assistant expert. Réponds en français, de façon concise et précise.")
+          (coding
+           . "Tu es un expert en programmation. Génère du code propre, commenté et testé.")
+          (refactor
+           . "Tu es un expert en refactoring. Améliore le code fourni sans changer son comportement.")
+          (explain
+           . "Explique ce code étape par étape, en français, pour un développeur intermédiaire.")))
+
+  ;; --- Raccourcis clavier -----------------------------------
+  :bind (("C-c g g" . gptel)           ; ouvrir le chat
+		 ("C-c g s" . gptel-send)      ; envoyer prompt
+		 ("C-c g m" . gptel-menu)      ; menu principal
+		 ("C-c g r" . gptel-rewrite)   ; réécrire région
+		 ("C-c g a" . gptel-add)))     ; ajouter contexte
+
 ;;; ----------------
 ;;; dotemacs.el ends here
+
