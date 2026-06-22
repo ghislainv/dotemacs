@@ -473,7 +473,7 @@ justify (as for `fill-paragraph')."
   :hook (pdf-view-mode . ghvi/turn-off-line-numbers)
   :custom
   (pdf-annot-activate-created-annotations t "automatically annotate highlights"))
-       
+
 ;; -------------------------------------
 ;; MAGIT
 ;; -------------------------------------
@@ -665,16 +665,18 @@ justify (as for `fill-paragraph')."
 ;; https://github.com/milouse/flycheck-grammalecte
 (use-package flycheck-grammalecte
   :ensure t
-  :after flycheck
-  :demand nil
-  :hook (org-mode . flycheck-mode)
+  :bind ("C-c f g" . ghvi/activer-grammalecte)
   :init
   (setq flycheck-grammalecte-report-apos nil
         flycheck-grammalecte-report-esp nil
         flycheck-grammalecte-report-nbsp nil)
-  :config
-  (add-to-list 'flycheck-grammalecte-enabled-modes 'org-mode)
-  (flycheck-grammalecte-setup))
+  (defun ghvi/activer-grammalecte ()
+	"Active Grammalecte (et flycheck-mode) dans le buffer courant."
+	(interactive)
+	(require 'flycheck-grammalecte)
+	(add-to-list 'flycheck-grammalecte-enabled-modes 'org-mode)
+	(flycheck-grammalecte-setup)
+	(flycheck-mode 1)))
 
 ;; -------------------------------------
 ;; OLIVETTI MINOR MODE
@@ -765,19 +767,6 @@ justify (as for `fill-paragraph')."
   :after citar embark
   :no-require
   :config (citar-embark-mode))
-
-;; -------------------------------------
-;; PDF viewer
-;; -------------------------------------
-
-;; This is to use pdf-tools instead of doc-viewer
-(use-package pdf-tools
-  :config
-  (pdf-tools-install)
-  ;; This means that pdfs are fitted to width by default when you open them
-  (setq-default pdf-view-display-size 'fit-width)
-  :custom
-  (pdf-annot-activate-created-annotations t "automatically annotate highlights"))
 
 ;; -------------------------------------
 ;; SHELL CONFIGURATION
@@ -1669,7 +1658,7 @@ installed."
   :commands (org-ai-mode
              org-ai-global-mode)
   :defines org-ai-default-chat-model org-ai-openai-api-token
-  :hook (org-mode-hook . org-ai-mode) ; enable org-ai in org-mode
+  :hook (org-mode . org-ai-mode) ; enable org-ai in org-mode
   :init
   (org-ai-global-mode) ; installs global keybindings on C-c M-a
   :config
@@ -1703,7 +1692,7 @@ installed."
 
 (use-package yasnippet
   :ensure t
-  :hook (org-mode-hook . yas-minor-mode))
+  :hook (org-mode . yas-minor-mode))
 
 ;; -------------------------
 ;; Weather
