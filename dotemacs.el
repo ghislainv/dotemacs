@@ -30,7 +30,6 @@
 			better-defaults
 			citeproc
 			htmlize
-			jedi
 			olivetti
 			org
 			org-contrib
@@ -38,7 +37,6 @@
 			ox-rst
 			ox-twbs
 			pretty-mode
-			py-autopep8
 			pylint
 			use-package
 			;;xterm-color
@@ -65,13 +63,22 @@
 ;; (always install packages if not installed)
 (require 'use-package)
 (setq use-package-always-ensure 't)
+(setq use-package-compute-statistics t)
 
 ;; Mise à jour des paquets intégrés
-(setq package-install-upgrade-built-in t)
+;; (setq package-install-upgrade-built-in t)
 
 ;; --------------------------------------
 ;; BASIC CUSTOMIZATION
 ;; --------------------------------------
+
+;; Garbage collector
+;; Optimiser le garbage collector (grand GC pendant l'idle, petit
+;; pendant l'usage)
+(use-package gcmh
+  :ensure t
+  :config
+  (gcmh-mode 1))
 
 ;; Themes
 (use-package leuven-theme
@@ -157,22 +164,52 @@ justify (as for `fill-paragraph')."
 (use-package diminish
   :ensure t)
 
-;; Company for auto-completion
-(use-package company
-  :ensure t
-  :diminish company-mode
-  :custom
-  (company-minimum-prefix-length 4)
-  (company-idle-delay 0.1)
-  (company-dabbrev-minimum-length 8)
-  (company-selection-wrap-around t)
-  :config
-  (global-company-mode 1))
+;; ;; Company for auto-completion (--> replace by corfu)
+;; (use-package company
+;;   :ensure t
+;;   :defer t
+;;   :diminish company-mode
+;;   :custom
+;;   (company-minimum-prefix-length 4)
+;;   (company-idle-delay 0.1)
+;;   (company-dabbrev-minimum-length 8)
+;;   (company-selection-wrap-around t)
+;;   :config
+;;   (global-company-mode 1))
 
-;; Company box
-(use-package company-box
+;; ;; Company box
+;; (use-package company-box
+;;   :ensure t
+;;   :hook (company-mode . company-box-mode))
+
+;; corfu
+;; Alternative légère à =company=, basée sur les completion-at-point-functions (capf)
+;; même mécanisme qu'=eglot=.
+(use-package corfu
   :ensure t
-  :hook (company-mode . company-box-mode))
+  :custom
+  (corfu-auto t)
+  (corfu-auto-delay 0.2)
+  (corfu-auto-prefix 3)
+  (corfu-cycle t)
+  (corfu-quit-at-boundary nil)
+  (corfu-preselect 'prompt)
+  :init
+  (global-corfu-mode 1))
+
+;; Icônes dans corfu
+(use-package nerd-icons-corfu
+  :ensure t
+  :after corfu
+  :config
+  (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
+
+;; Cape : ajoute des sources de complétion (dabbrev, fichiers, etc.)
+(use-package cape
+  :ensure t
+  :init
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-file))
 
 ;; Rainbow delimiter
 (use-package rainbow-delimiters
@@ -184,6 +221,29 @@ justify (as for `fill-paragraph')."
 (require 'autorevert)
 (global-auto-revert-mode 1)
 (setq auto-revert-verbose nil)
+
+;; savehist-mode=
+;; Persiste l'historique du minibuffer entre les sessions Emacs.
+(use-package savehist
+  :ensure nil  ; built-in
+  :init
+  (savehist-mode 1)
+  :custom
+  (savehist-additional-variables '(search-ring regexp-search-ring kill-ring)))
+
+;; recentf-mode
+;; Garde une liste des fichiers récemment ouverts.
+(use-package recentf
+  :ensure nil  ; built-in
+  :init
+  (recentf-mode 1)
+  :custom
+  (recentf-max-saved-items 50)
+  (recentf-max-menu-items 15)
+  :config
+  ;; Exclure les fichiers non pertinents
+  (add-to-list 'recentf-exclude "/.elpa/")
+  (add-to-list 'recentf-exclude "/tmp/"))
 
 ;; -------------------------------------
 ;; Emojify
@@ -203,6 +263,7 @@ justify (as for `fill-paragraph')."
 
 (use-package mastodon
   :ensure t
+  :defer t
   :config
   (setq mastodon-instance-url "https://ecoevo.social"
         mastodon-active-user "ghislainv"))
@@ -378,6 +439,7 @@ justify (as for `fill-paragraph')."
 
 (use-package org-msg
   :ensure t
+  :defer t
   :config
   (org-msg-mode 0))
 
@@ -447,6 +509,7 @@ justify (as for `fill-paragraph')."
 ;; Configure Elfeed with org mode
 (use-package elfeed-org
   :ensure t
+  :defer t
   :config
   (elfeed-org)
   (defvar ghvi/elfeed-org-files
@@ -520,7 +583,7 @@ justify (as for `fill-paragraph')."
 ;; -------------------------------------
 
 (require 'yaml-mode)
-(add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
+(add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-ts-mode))
 
 (add-hook 'yaml-mode-hook
 	  #'(lambda ()
@@ -568,7 +631,7 @@ justify (as for `fill-paragraph')."
   :defer t
   :defines ess-r-mode-map inferior-ess-r-mode-map
   :init
-  (require 'ess-site)
+  (require 'ess-r-mode)
   :mode ("\\.[rR]\\'" . R-mode)
   :hook ((ess-mode . ghvi/ess-display-buffer)
 	 (ess-mode . rainbow-delimiters-mode))
@@ -655,6 +718,7 @@ justify (as for `fill-paragraph')."
 
 (use-package flycheck
   :ensure t
+  :defer t
   :init (global-flycheck-mode 1)
   :custom
   (flycheck-disabled-checkers '(org-lint))
@@ -933,6 +997,7 @@ justify (as for `fill-paragraph')."
 
 (use-package python
   :ensure nil
+  :mode ("\\.py\\'" . python-ts-mode)   ; associer .py à ts-mode
   :init
   ;; Add a function to send a single line to the Python console
   (defun ghvi/python-shell-send-line ()
@@ -945,7 +1010,7 @@ justify (as for `fill-paragraph')."
       (python-shell-send-region
        (region-beginning)
        (region-end))))
-  :bind (:map python-mode-map
+  :bind (:map python-ts-mode-map
 			  ("C-<return>" . python-shell-send-region)
 			  ("C-<backspace>" . ghvi/python-shell-send-line))
   :config
@@ -976,9 +1041,9 @@ justify (as for `fill-paragraph')."
   :ensure t
   :commands eglot
   :hook
-  ((python-mode . eglot-ensure))
+  ((python-ts-mode . eglot-ensure))
   :config
-  (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))
+  (add-to-list 'eglot-server-programs '(python-ts-mode . ("pylsp")))
   (setq eglot-autoshutdown t))
 
 ;; --------------------------------------
@@ -1006,7 +1071,7 @@ justify (as for `fill-paragraph')."
 ;; Standard key bindings
 (global-set-key (kbd "C-c i") 'org-id-get-create)
 (global-set-key (kbd "C-c l") 'org-store-link)
-(global-set-key (kbd "C-c b") 'org-iswitchb)
+(global-set-key (kbd "C-c b") 'consult-buffer)
 (global-set-key (kbd "C-c c") 'org-capture)
 (global-set-key (kbd "C-c S-t") 'org-babel-execute-subtree)
 (defun ghvi/open-notes-work ()
@@ -1457,22 +1522,24 @@ installed."
 ;; variants of basic, built-in functionality.  One of the headline
 ;; features of `consult' is its preview facility, where it shows in
 ;; another Emacs window the context of what is currently matched in
-;; the minibuffer.  Here I define key bindings for some commands you
-;; may find useful.  The mnemonic for their prefix is "alternative
-;; search" (as opposed to the basic C-s or C-r keys).
+;; the minibuffer. Here I define key bindings for some commands you
+;; may find useful. The mnemonic for their prefix is "alternative
+;; search with user keybind C-c s" (as opposed to the basic
+;; C-s or C-r keys).
 (use-package consult
   :ensure t
   :bind (;; A recursive grep
-         ("M-s M-g" . consult-grep)
+         ("C-c s g" . consult-grep)
          ;; Search for files names recursively
-         ("M-s M-f" . consult-find)
+         ("C-c s f" . consult-find)
          ;; Search through the outline (headings) of the file
-         ("M-s M-o" . consult-outline)
+         ("C-c s o" . consult-outline)
          ;; Search the current buffer
-         ("M-s M-l" . consult-line)
-         ;; Switch to another buffer, or bookmarked file, or recently
-         ;; opened file.
-         ("M-s M-b" . consult-buffer)))
+         ("C-c s l" . consult-line)
+         ;; Switch to another buffer, or bookmarked file, or recently opened file.
+         ("C-c s b" . consult-buffer)
+		 ;; Recent files
+		 ("C-c s r" . consult-recent-file)))
 
 ;; The `embark' package lets you target the thing or context at point
 ;; and select an action to perform on it.  Use the `embark-act'
