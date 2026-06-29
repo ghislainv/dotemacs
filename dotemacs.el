@@ -302,7 +302,7 @@ justify (as for `fill-paragraph')."
                        user-mail-address to subject))
 		(error "Envoi annulé"))))
   :hook
-  (message-send-hook . ghvi/mu4e-confirm-send)
+  (message-send . ghvi/mu4e-confirm-send)
   :bind (("C-c m" . mu4e)
 	 :map mu4e-headers-mode-map
 	 ("C-c c" . mu4e-org-store-and-capture)
@@ -788,11 +788,10 @@ justify (as for `fill-paragraph')."
   :ensure t
   :config
   (setq biblio-crossref-user-email-address "ghislainv@mtloz.fr")
-  (defun add-doi () "Adding a doi to .bib file"
+  (defun add-doi ()
+	"Adding a doi to .bib file"
 	(interactive)
-	(progn
-	  (defvar ghvi/mydoi "" "DOI variable")
-      (setq ghvi/mydoi (read-string "DOI "))
+    (let ((ghvi/mydoi (read-string "DOI: ")))
       (find-file "~/Documents/Bibliography/biblio.bib")
       (goto-char (point-max))
 	  (forward-line -1)
@@ -1058,7 +1057,7 @@ justify (as for `fill-paragraph')."
 (add-to-list 'auto-mode-alist '("\\.\\(org\\|org_archive\\)$" . org-mode))
 
 ;; Default directories and files
-(setq org-directory "~/kDrive/Documents/Notes/")
+(setq org-directory "~/cloud-mxeco/Notes/")
 (setq org-default-notes-file (concat org-directory "/notes_work.org"))
 
 ;; Configure org-refile
@@ -1362,10 +1361,10 @@ installed."
   :config
   (setq org-agenda-include-diary t) ;; See .config/emacs_ghvi/diary file
   (setq diary-show-holidays-flag nil) ;; US holidays in calendar-holidays variables
-  (setq org-agenda-files '("~/kDrive/Documents/Notes/notes_work.org"
-			   "~/kDrive/Documents/Notes/notes_perso.org"
-			   "~/kDrive/Documents/Notes/todos.org"
-			   "~/kDrive/Documents/Notes/events.org"))
+  (setq org-agenda-files '("~/cloud-mxeco/Notes/notes_work.org"
+			   "~/cloud-mxeco/Notes/notes_perso.org"
+			   "~/cloud-mxeco/Notes/todos.org"
+			   "~/cloud-mxeco/Notes/events.org"))
   (setq org-agenda-custom-commands
 	'(("w" tags-todo "+work")
 	  ("p" tags-todo "+perso"))))
@@ -1405,9 +1404,9 @@ installed."
 ;; --------------------------------------
 
 ;; Files
-(defvar ghvi/org-default-todos-file "~/kDrive/Documents/Notes/todos.org"
+(defvar ghvi/org-default-todos-file "~/cloud-mxeco/Notes/todos.org"
   "Default file for todos.")
-(defvar ghvi/org-default-events-file "~/kDrive/Documents/Notes/events.org"
+(defvar ghvi/org-default-events-file "~/cloud-mxeco/Notes/events.org"
   "Default file for events.")
 
 ;; org-capture-templates
@@ -1621,7 +1620,7 @@ installed."
 	("C-c C-d C-i" . denote-link-dired-marked-notes)
 	("C-c C-d C-r" . denote-dired-rename-marked-files))
   :custom
-  (denote-directory "/home/ghislain/kDrive/Documents/Notes")
+  (denote-directory "/home/ghislain/cloud-mxeco/Notes")
   :config
   (setq denote-org-front-matter
   "#+title:      %s
@@ -1730,6 +1729,7 @@ installed."
   (org-ai-global-mode) ; installs global keybindings on C-c M-a
   :config
   ;; API token is in .authinfo
+  (require 'org-ai-talk)
   (setq org-ai-default-chat-model "gpt-4o-mini")
   (setq org-ai-image-model "dall-e-3")
   (setq org-ai-image-default-size "1792x1024")
@@ -1750,8 +1750,6 @@ installed."
   (setq greader-espeak-rate 142)
   (setq greader-espeak-language "mb/mb-fr4")
   (setq greader-espeak-executable-name "espeak-ng"))
-(require 'whisper)
-(require 'org-ai-talk)
 
 ;; -------------------------
 ;; YASnippet
