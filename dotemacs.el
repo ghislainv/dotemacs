@@ -504,24 +504,33 @@ justify (as for `fill-paragraph')."
 
 (use-package dired-subtree
   :ensure t
+  :after dired
   :defer t
+  :bind (:map dired-mode-map
+         ("<tab>" . dired-subtree-toggle)
+         ("TAB" . dired-subtree-toggle)
+         ("<backtab>" . dired-subtree-remove)
+         ("S-TAB" . dired-subtree-remove))
   :config
   (setq dired-subtree-use-backgrounds nil))
 
 (use-package dired-rsync
   :ensure t
-  :defer t)
+  :after dired
+  :defer t
+  :bind (:map dired-mode-map
+         ("r" . dired-rsync)))
+
+(use-package dired-hide-dotfiles
+  :ensure t
+  :after dired
+  :defer t
+  :bind (:map dired-mode-map
+         ("H" . dired-hide-dotfiles-mode)))
 
 (use-package dired
   :ensure nil
   :defines image-dired-external-viewer
-  :hook (dired-mode . (lambda ()
-                        (keymap-set dired-mode-map "H" 'dired-hide-dotfiles-mode)
-                        (keymap-set dired-mode-map "r" 'dired-rsync)
-                        (keymap-set dired-mode-map "<tab>" 'dired-subtree-toggle)
-                        (keymap-set dired-mode-map "TAB" 'dired-subtree-toggle)
-                        (keymap-set dired-mode-map "<backtab>" 'dired-subtree-remove)
-                        (keymap-set dired-mode-map "S-TAB" 'dired-subtree-remove)))
   :bind (("C-x C-d" . dired)
          :map dired-mode-map
          ("C-o" . casual-dired-tmenu))
@@ -1446,6 +1455,14 @@ installed."
   :bind* ("M-o" . ace-window))
 
 ;; --------------------------------------
+;; Casual
+;; --------------------------------------
+
+;; Casual
+(use-package casual
+  :ensure t)
+
+;; --------------------------------------
 ;; ORG AGENDA
 ;; --------------------------------------
 
@@ -1471,7 +1488,7 @@ installed."
 	'(("w" tags-todo "+work")
 	  ("p" tags-todo "+perso"))))
 
-;; Casual calendar
+;; Casual
 (use-package casual
   :ensure t)
 
