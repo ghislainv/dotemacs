@@ -289,20 +289,56 @@ justify (as for `fill-paragraph')."
   (add-hook 'mu4e-compose-mode-hook #'(lambda () (auto-save-mode -1))) ;; To avoid draft accumulation
   ;; Execute without confirmation
   (defun ghvi/mu4e-execute-no-confirm ()
-	"Execute all without confirmation."
+	"Execute all marks without confirmation."
 	(interactive)
 	(mu4e-mark-execute-all 'no-confirm))
   ;; Confirmation before sending mail
   (defun ghvi/mu4e-confirm-send ()
 	"Demande confirmation avant l'envoi."
-	(let* ((to (or (message-fetch-field "To") "(aucun destinataire)"))
-           (subject (or (message-fetch-field "Subject") "(sans objet)")))
+	(let* ((to (message-fetch-field "To"))
+           (cc (message-fetch-field "Cc"))
+           (bcc (message-fetch-field "Bcc"))
+           (subject (or (message-fetch-field "Subject") "(sans objet)"))
+           (destinataires
+			(mapconcat #'identity
+                       (delq nil
+							 (list (when to  (format "À  : %s" to))
+                                   (when cc  (format "Cc : %s" cc))
+                                   (when bcc (format "Bcc: %s" bcc))))
+                       "\n")))
+      (when (string-empty-p (or destinataires ""))
+		(setq destinataires "À  : (aucun destinataire)"))
       (unless (y-or-n-p
-               (format "De   : %s\nÀ    : %s\nObjet: %s\nEnvoyer ce message ?"
-                       user-mail-address to subject))
+               (format "De   : %s\n%s\nObjet: %s\nEnvoyer ce message ?"
+                       user-mail-address destinataires subject))
 		(error "Envoi annulé"))))
+  
+;;   ;; Ne pas laisser mu4e/message ajouter la signature tout en bas automatiquement
+;;   (setq mu4e-compose-signature-auto-include nil)
+;;   ;; Insère la signature juste après le texte de la réponse,
+;;   ;; au-dessus de la citation, au lieu de tout en bas du fil
+;; (defvar-local ghvi/signature-inserted nil
+;;   "Non-nil si la signature a déjà été insérée dans ce buffer.")
+;; (defun ghvi/mu4e-insert-signature-at-point (&rest _)
+;;   "Insère la signature à l'endroit où message-mode place le curseur."
+;;   (when (and (derived-mode-p 'message-mode)
+;;              message-signature
+;;              (not ghvi/signature-inserted))
+;;     (let* ((sig (cond
+;;                  ((eq message-signature t) nil)
+;;                  ((functionp message-signature) (funcall message-signature))
+;;                  ((stringp message-signature) message-signature)
+;;                  (t (eval message-signature t))))
+;;            (pos (point)))
+;;       (when (stringp sig)
+;;         (insert "\n" sig)
+;;         (goto-char pos)
+;;         (setq ghvi/signature-inserted t)))))
+;; (advice-add 'message-position-point :after #'ghvi/mu4e-insert-signature-at-point)
+  
   :hook
   (message-send . ghvi/mu4e-confirm-send)
+
   :bind (("C-c m" . mu4e)
 	 :map mu4e-headers-mode-map
 	 ("C-c c" . mu4e-org-store-and-capture)
@@ -322,9 +358,9 @@ justify (as for `fill-paragraph')."
     (concat
      "-------------------------------------------------------------------\n"
      "Ghislain VIEILLEDENT\n"
-     "Phone: +33.6.24.62.65.07 (French No.)\n"
+     "Téléphone: +33.6.24.62.65.07\n"
      "E-mail: ghislainv(at)mtloz(dot)fr\n"
-     "Web site: https://ghislainv.fr\n"
+     "Site web: https://ghislainv.fr\n"
      "-------------------------------------------------------------------\n")
     "My email signature")
   (defvar ghvi-cirad/signature
@@ -334,7 +370,7 @@ justify (as for `fill-paragraph')."
      "Cirad, UMR AMAP, Montpellier, France\n"
      "Phone: +33.6.24.62.65.07 (French No.)\n"
      "E-mail: ghislain.vieilledent@cirad.fr\n"
-     "Research unit web site: https://amap.cirad.fr/\n"
+     "Research unit web site: https://amaplab.fr/\n"
      "Academic web site: https://ecology.ghislainv.fr/\n"
      "-------------------------------------------------------------------\n")
     "My cirad signature")
@@ -431,7 +467,16 @@ justify (as for `fill-paragraph')."
 
   ;; Do not reply to yourself
   ;; A value of nil means exclude ‘user-mail-address’ only
-  (setq message-dont-reply-to-names nil))
+  (setq message-dont-reply-to-names nil)
+
+  ;; Create file path if not existing with command "o" on attachments
+  (defun ghvi/mm-save-part-to-file--ensure-dir (orig-fun handle filename &rest args)
+    "Crée le dossier parent de FILENAME s'il n'existe pas avant de sauvegarder."
+    (let ((dir (file-name-directory filename)))
+      (when (and dir (not (file-exists-p dir)))
+	(make-directory dir t)))
+    (apply orig-fun handle filename args))
+  (advice-add 'mm-save-part-to-file :around #'ghvi/mm-save-part-to-file--ensure-dir))
 
 ;; -------------------------------------
 ;; org-msg
@@ -457,21 +502,41 @@ justify (as for `fill-paragraph')."
 ;; Dired
 ;; -------------------------------------
 
+(use-package dired-subtree
+  :ensure t
+  :defer t
+  :config
+  (setq dired-subtree-use-backgrounds nil))
+
+(use-package dired-rsync
+  :ensure t
+  :defer t)
+
 (use-package dired
   :ensure nil
   :defines image-dired-external-viewer
+  :hook (dired-mode . (lambda ()
+                        (keymap-set dired-mode-map "H" 'dired-hide-dotfiles-mode)
+                        (keymap-set dired-mode-map "r" 'dired-rsync)
+                        (keymap-set dired-mode-map "<tab>" 'dired-subtree-toggle)
+                        (keymap-set dired-mode-map "TAB" 'dired-subtree-toggle)
+                        (keymap-set dired-mode-map "<backtab>" 'dired-subtree-remove)
+                        (keymap-set dired-mode-map "S-TAB" 'dired-subtree-remove)))
+  :bind (("C-x C-d" . dired)
+         :map dired-mode-map
+         ("C-o" . casual-dired-tmenu))
   :config
   ;; Split window, Dired tries to guess a default target directory
   (setq dired-dwim-target t
-	delete-by-moving-to-trash t)
+        delete-by-moving-to-trash t)
   ;; Activate dired-x
   (require 'dired-x)
   ;; Define external image viewer/editor
   (setq image-dired-external-viewer "/usr/bin/gimp")
   ;; Human readable
   (setq dired-listing-switches "-alFh")
-  ;; Casula-dired
-  (keymap-set dired-mode-map "C-o" #'casual-dired-tmenu))
+  ;; Only one dired buffer
+  (setq dired-kill-when-opening-new-dired-buffer t))
 
 (use-package nerd-icons-dired
   :ensure t
@@ -499,23 +564,34 @@ justify (as for `fill-paragraph')."
 ;; elfeed
 ;; -------------------------------------
 
+(defun ghvi/elfeed-truncate-setup ()
+  "Truncate last column in elfeed."
+  (visual-line-mode -1)
+  (setq truncate-lines t))
+
 (use-package elfeed
   :ensure t
+  :defer t
   :bind ("C-x w" . elfeed)
+  :hook
+  (elfeed-search-mode . ghvi/elfeed-truncate-setup)
   :config
+  (setq elfeed-use-curl t)
   (setq elfeed-db-directory (expand-file-name "elfeed" user-emacs-directory))
+  (setq elfeed-search-title-max-width 100)
+  (setq elfeed-search-trailing-width 20)
   )
 
 ;; Configure Elfeed with org mode
 (use-package elfeed-org
   :ensure t
-  :defer t
+  :after elfeed
   :config
-  (elfeed-org)
   (defvar ghvi/elfeed-org-files
     (list (expand-file-name "elfeed/elfeed.org" user-emacs-directory))
     "List of elfeed.org files.")
   (setq rmh-elfeed-org-files ghvi/elfeed-org-files)
+  (elfeed-org)
   )
 
 ;; -------------------------------------
@@ -858,6 +934,8 @@ justify (as for `fill-paragraph')."
   :ensure t
   :config
   (setq exec-path-from-shell-arguments '("-l"))
+  (setq exec-path-from-shell-variables 
+        '("PATH" "MANPATH" "LD_LIBRARY_PATH" "PKG_CONFIG_PATH"))
   (when (memq window-system '(mac ns x))
 	(exec-path-from-shell-initialize)))
 
@@ -1241,6 +1319,30 @@ justify (as for `fill-paragraph')."
 ;; Org to RST
 (require 'ox-rst)
 
+;; Export bibliography for rst file using
+;; #+cite_export: oc-rst
+(require 'oc)
+
+(defun ghvi/oc-rst-export-citation (citation _style _backend info)
+  (let* ((refs (org-cite-get-references citation))
+         (keys (mapcar (lambda (r) (org-element-property :key r)) refs)))
+    (format ":cite:p:`%s`" (mapconcat #'identity keys ","))))
+
+(defun ghvi/oc-rst-export-bibliography (_keys _files _style _props _backend info)
+  (let ((local-files (org-element-map (plist-get info :parse-tree) 'keyword
+                        (lambda (kw)
+                          (when (equal (org-element-property :key kw) "BIBLIOGRAPHY")
+                            (org-element-property :value kw))))))
+    (mapconcat
+     (lambda (file)
+       (format ".. bibliography:: %s\n   :filter: docname in docnames\n" file))
+     local-files "\n")))
+
+(org-cite-register-processor 'oc-rst
+  :export-citation #'ghvi/oc-rst-export-citation
+  :export-bibliography #'ghvi/oc-rst-export-bibliography)
+
+
 ;; Bibliography
 (require 'ox-bibtex)
 
@@ -1459,6 +1561,12 @@ installed."
   '((t (:weight bold :box (:line-width 1 :color "#9EB6D4")
 		:foreground "#9EB6D4" :background "#E0EFFF")))
   "Face used to display state SDAY.")
+
+;; org priority faces
+(setq org-priority-faces
+      '((?A . (:foreground "red"))
+        (?B . (:foreground "blue"))
+        (?C . (:foreground "black"))))
 
 ;; --------------------------------------
 ;; COMPLETION
@@ -1852,7 +1960,7 @@ installed."
 
 (use-package gptel
   :ensure t
-  :functions gptel-api-key-from-auth-source
+  :functions gptel-api-key-from-auth-source gptel-make-tool
   :config
 
   ;; --- Clé API (méthode sécurisée via ~/.authinfo) ----------
@@ -1879,14 +1987,23 @@ installed."
   
   ;; OpenAI / ChatGPT
   (gptel-make-openai "ChatGPT"
-	:stream t
-	:key gptel-api-key
-	:models '(gpt-4o))
+    :stream t
+    :key gptel-api-key
+    :models '(gpt-4o))
+
+  ;; Albert
+  (gptel-make-openai "Albert"
+    :host "albert.api.etalab.gouv.fr"
+    :endpoint "/v1/chat/completions"
+    :stream t
+    :key gptel-api-key
+    :models '(deepseek-v4-flash-0731 gemma-4-31b-it gpt-oss-120b))
 
   ;; --- Comportement général ---------------------------------
   (setq gptel-default-mode 'org-mode)   ; réponses en Org par défaut
   (setq gptel-use-curl t)               ; curl pour de meilleures perfs
-  (setq gptel-use-tools t)              ; activer le tool-use (agents)
+  (setq gptel-use-tools nil)            ; activer le tool-use (agents)
+  (setq gptel-cache t)                  ; active le cache pour diminuer le prix des requêtes
 
   ;; --- Directive système ------------------------------------
   (setq gptel-directives
@@ -1899,13 +2016,117 @@ installed."
           (explain
            . "Explique ce code étape par étape, en français, pour un développeur intermédiaire.")))
 
+  ;; --- Tools ------------------------------------------------
+  (defvar ghvi/gptel-tool-list-dir
+    (gptel-make-tool
+     :name "list_directory"
+     :category "filesystem"
+     :description "Recursively list all files in a directory"
+     :confirm t
+     :function (lambda (dir)
+		 (mapconcat #'identity
+                            (directory-files-recursively dir ".")
+                            "\n"))
+     :args (list '(:name "dir"
+			 :type string
+			 :description "Path of the directory to list")))
+    "gptel tool to list files in a directory.")
+
+  (defvar ghvi/gptel-tool-read-file
+    (gptel-make-tool
+     :name "read_file"
+     :category "filesystem"
+     :description "Read and return the content of a text file"
+     :confirm t
+     :function (lambda (path)
+		 (with-temp-buffer
+                   (insert-file-contents (expand-file-name path))
+                   (buffer-string)))
+     :args (list '(:name "path"
+			 :type string
+			 :description "Absolute path of the file to read")))
+    "gptel tool to read the content of a file.")
+
+  (defvar ghvi/gptel-tool-write-file
+    (gptel-make-tool
+     :name "write_file"
+     :category "filesystem"
+     :description "Write content to a file (creates or overwrites it)"
+     :confirm t
+     :function (lambda (path content)
+		 (with-temp-buffer
+                   (insert content)
+                   (write-file (expand-file-name path)))
+		 (format "File written: %s" path))
+     :args (list '(:name "path"
+			 :type string
+			 :description "Absolute path of the file to write")
+		 '(:name "content"
+			 :type string
+			 :description "Content to write to the file")))
+    "gptel tool to write content to a file.")
+
+  (setq gptel-tools (list ghvi/gptel-tool-list-dir
+                          ghvi/gptel-tool-read-file
+			  ghvi/gptel-tool-write-file))
+		  
   ;; --- Raccourcis clavier -----------------------------------
   :bind (("C-c g g" . gptel)           ; ouvrir le chat
-		 ("C-c g s" . gptel-send)      ; envoyer prompt
-		 ("C-c g m" . gptel-menu)      ; menu principal
-		 ("C-c g r" . gptel-rewrite)   ; réécrire région
-		 ("C-c g a" . gptel-add)))     ; ajouter contexte
+	 ("C-c g s" . gptel-send)      ; envoyer prompt
+	 ("C-c g m" . gptel-menu)      ; menu principal
+	 ("C-c g r" . gptel-rewrite)   ; réécrire région
+	 ("C-c g a" . gptel-add)))     ; ajouter contexte
+
+;; Update docstrings
+(declare-function gptel-request "gptel")
+(defun update-py-docstrings-with-claude (file)
+  "Update Python docstrings in FILE using Claude AI via gptel.
+
+Reads the contents of FILE, sends it to Claude with instructions
+to rewrite all docstrings in NumPy format, and replaces the buffer
+contents with the updated code before saving.
+
+Parameters
+----------
+file : string
+    Path to the Python file whose docstrings will be updated.
+
+Side Effects
+------------
+- Opens FILE in a new buffer if not already visited.
+- Erases and replaces buffer contents with Claude's response.
+- Saves the buffer to disk after updating.
+- Displays a confirmation message in the echo area.
+
+Notes
+-----
+Requires gptel to be installed and configured with a valid Claude
+API key.  The AI is instructed to add Parameters, Returns, Raises,
+Notes, and Examples sections without modifying code logic."
+  (interactive "fFichier Python: ")
+  (with-current-buffer (find-file file)
+    (gptel-request
+     (buffer-string)
+     :system "Rewrite all Python docstrings using NumPy format.
+Add Parameters, Returns, Raises, Notes, Examples sections.
+Do not modify the code logic. Return only the updated code."
+     :callback (lambda (response _)
+                 (erase-buffer)
+                 (insert response)
+                 (save-buffer)
+                 (message "Docstrings updated in %s" file)))))
+
+;; ------
+;; Quarto
+;; ------
+
+(use-package quarto-mode
+  :ensure t
+  :mode (("\\.qmd\\'" . quarto-mode)))
+
+(use-package ox-quarto
+  :load-path "~/.config/emacs/ox-quarto/"
+  :after ox)
 
 ;;; ----------------
 ;;; dotemacs.el ends here
-
